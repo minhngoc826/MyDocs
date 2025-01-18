@@ -1,0 +1,32 @@
+// Home
+
+// Samsung
+Name					IP						Web/Port/Type
+
+dev-server				192.168.56.10			todolist:2001/Vuejs:nginx			vision:3000/React:service			shoeshop:8090/Spring:
+												todolist:5555/Vuejs:docker			vision:4444/React:docker			shoeshop:7777-6666/Spring:docker
+
+database-server			192.168.56.20
+
+gitlab-server			192.168.56.30																					shoeshop:8066/Spring
+
+desktop					192.168.56.40
+
+
+1. Project: Envinroment: deployment - staging - prodction
+2. Devops:
+	- Setup Envinroment: 
+		+ Servers: 					Linux, nginx, connection between servers [dev-server, gitlab-server, database-server], phân quyền user / security
+		+ Setup Manage project: 	Gitlab, Jenkins, Travis, Circle
+		+ CI/CD:					build -> test: 	pef, security, clean code, ...
+									run: 			deploy
+
+// Company
+1. Gitlab-server: 		container project code -> CI/CD 
+						-> build -> run: make docker image
+						
+2. Database-server:		contains database
+						-> docker: contains docker image --> push image to registry
+
+3. Server (dev-server):	deploy web, app
+						-> docker: registry-server

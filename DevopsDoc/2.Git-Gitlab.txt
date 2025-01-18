@@ -1,0 +1,45 @@
+
+
+II. Gitlab:													https://gitlab.cn/docs/14.0/ee/README.html
+	1.
+	2.
+	3. Merge request:
+		- New merge request from your local environment:	git push origin my-new-branch
+		- New merge request from an issue:					https://gitlab.cn/docs/14.0/ee/user/project/repository/web_editor.html#create-a-new-branch-from-an-issue
+		- New merge request by email:						https://gitlab.cn/docs/14.0/ee/user/project/merge_requests/creating_merge_requests.html
+			+ Require:	
+				- incoming email:
+				- .patch file:
+		
+		- Reviewing and managing merge requests:			https://gitlab.cn/docs/14.0/ee/user/project/merge_requests/reviews/index.html
+			+ 
+			
+	x. CI-CD:
+		- yaml:
+			+ Global keywords:
+				- stages:			
+					+ Jobs in the same stage run in parallel.
+					+ Jobs in the next stage run after the jobs from the previous stage complete successfully, stop if previous stage failed
+					+ pipeline failed if any job failed but all jobs still run completely
+					
+					+ job ko có stage -> đc assign stage 'test'
+					+ yml has no stage: build, test and deploy are the default pipeline stages
+					
+					+ needs: run stage without ordered
+					
+				- workflow:	rules:		
+					+ if:	when:	variables:	
+					
+				- include:			Import configuration from other YAML files.
+					+ local / file / remote / template
+					
+				- variables:
+			
+			+ Keyword details:
+				- Job:
+					stage: name		/		extends: otherStage
+					before_script:
+					script:
+					after_script:
+
+					
