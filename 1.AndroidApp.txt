@@ -1,0 +1,225 @@
+// Android App
+
+1. Overview
+	- Languages:			C++, Java/Kotlin
+	- Android Package: 		.apk					--> install app
+	- Android App Bundle:	.aab					--> 
+	
+	- 1 app ~ 1 sandbox: security privacy
+		+ Android = Linux with multi user:	1 app = 1 user
+		+ System define 1 UID for 1 app, app can not change UID. System set permission of all files in app and only app's UID can read those files
+		+ Each process has each VM -> mã của ứng dụng sẽ chạy độc lập với các ứng dụng khác.
+		+ Each app runs in each Linux process. System start process when any component of app is run, then kill process when there is no component run or get memmory for other app.
+		+ Minimum permission: app only read app component, not other app.
+		
+	- Shared data between 2 app:
+		+ 2 app share 1 UID ~ 2 apps - 1 process/1 VM				---		android:sharedUserId: set UID for app, Deprecated from API 29
+		+ Request Permissions
+			
+	- Components:
+		+ Activity:				start = Intent
+		+ Service:				start = Intent
+		+ BroadcasrReceiver:	start = Intent
+		+ COntentProvider:		start = ContentResolver
+		
+	- Manifest:
+		+ Declare: permissions, SDK, libs (Google map), hardware (camera, bluetooth, screen = <uses-feature ... />)
+		+ Declare Components:
+			- Intent filter
+			- 
+		
+	- Resources
+	- assets/:		AssetManager
+	
+	- gradle: 
+	
+
+2. App Resources: res/																	https://developer.android.com/guide/topics/resources/providing-resources?hl=vi
+	- anim/		animator/
+	- color/
+	- values/:					colors, dimens, strings, styles, arrrays				/ values-vi,-en-US
+	- drawable/	mipmap/																	/ mipmap-xxhdpi,-anydpi
+	- layout/	menu/
+	- raw/:						Resources.openRawResource(R.raw.filename)
+	- xml/:						Resources.getXML()
+	- font/:					R.font.filename
+	
+	- 2.1. Extend resource:			<resources_name>-<qualifier>-<qualifier> follow order below:
+		+ mcc-mnc:				mcc310, mcc310-mnc004
+		+ language: 			en-us, en-rUs 		/		ldrtl, ldltr
+		+ dimens:				sw320dp, w720dp, h720dp
+		+ screen size:			small, normal, large, xlarge
+		+ screen type:			round, notround		/		notouch, finger
+		+ HDR:					highdr, lowdr 								-- Dải động cao (HDR)
+		+ orientation:			land, port
+		+ UI mode:				car, desk, television, appliance (noo screen), watch, vrheadset (VR: kính thực tế ảo)
+		+ theme/mode:			night, nonight
+		+ screen dpi:			ldpi ~ 120, mdpi ~ 160, hdpi ~ 240, xhdpi ~ 320, xxhdpi ~ 480, xxxhdpi ~ 640, nodpi ~ for bitmap, tvdpi ~ 213, anydpi
+		+ keyboard:				keysexposed, keyshidden, keyssoft		/		nokeys, qwerty, 12key
+		+ navigate:				navexposed, navhidden			/		nonav, dpad, trackball, wheel
+		+ API:					v4, v26, v33
+	
+	- 2.2. Alias resource:
+		+ 1 icon - 2 xml
+		+ layout:		<merge> <include layout="@layout/main_layout" /> </merge>
+		+ 
+		
+	- 2.3. Using:
+		+ Code:			R.color.secondary_text_dark
+		+ XML:			android:textColor="@android:color/secondary_text_dark"
+		+ Reference:	android:textColor="?android:textColorSecondary"
+		
+	- 2.4. Configs changes:		onConfigurationChanged()
+		+ Activity: not recreate activity --> android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|  keyboardHidden  |locale|layoutDirection|  uiMode"
+		
+	- 2.5. Locale: language
+		+ Translate:  		not translate = <xliff:g> 														<xliff:g id="time" example="5 days">%1$s</xliff:g> until holiday
+		+ get locale:		Locale primaryLocale = context.getResources().getConfiguration().getLocales().get(0);			val primaryLocale: Locale = context.resources.configuration.locales[0]
+		+ testing locale:	
+			- gradle:	buildTypes.getByName("debug") { isPseudoLocalesEnabled = true }
+			- change language
+			
+		+ Support language:
+			- gradle:			defaultConfig { resConfigs("en", "es") }							--> format(locale, "Choose a %d-digit PIN", 4)
+			- Locale config: 	https://developer.android.com/guide/topics/resources/app-languages?hl=vi
+			- set locale default:
+				+ val appLocale: LocaleListCompat = LocaleListCompat.forLanguageTags("xx-YY")
+				  AppCompatDelegate.setApplicationLocales(appLocale)							// Call this on the main thread as it may require Activity.restart()
+				  mContext.getSystemService(LocaleManager.class).setApplicationLocales(new LocaleList(Locale.forLanguageTag("xx-YY")));		---		LocaleList currentAppLocales = mContext.getSystemService(LocaleManager.class).getApplicationLocales();
+	
+	- 2.6. Resource types:		https://developer.android.com/guide/topics/resources/animation-resource?hl=en
+		+ Animaton:
+			- Property animation: Animator		--> res/animator/		--> ValueAnimator, ObjectAnimator, or AnimatorSet = <animator>, <objectAnimator>, <set>
+				+ Using: 
+					- val set: AnimatorSet = AnimatorInflater.loadAnimator(myContext, R.animator.property_animator).apply { setTarget(myObject)  start() }
+			
+			- View animation:					--> res/anim/			
+				+ Tween animation: Animation 		res/anim/filename.xml				--> creates an animation by performing a series of transformations on a single image
+					- support: 					<set>, <alpha>, <scale>, <translate>, <rotate>
+					- custom interpolators:		res/anim/filename.xml
+						+ 
+					- Using:
+						+ val hyperspaceJump: Animation = AnimationUtils.loadAnimation(this, R.anim.hyperspace_jump)					image.startAnimation(hyperspaceJump)
+					
+				+ Frame animation: AnimationDrawable	res/drawable/filename.xml	 	--> showing a sequence of images in order			
+					- support: <animation-list>, <item>
+					- Using:
+						+ rocketImage.setBackgroundResource(R.drawable.animate_rocket_thrust)
+						  val rocketAnimation = rocketImage.background
+						if (rocketAnimation is Animatable) {
+							rocketAnimation.start()
+						}
+						
+		+ Color state:	ColorStateList				--> res/color/filename.xml				--> <selector>  <item android:state_xxx = "true|false" /> </selector>
+		
+		+ Drawable:		getDrawable(int)			--> res/drawable/filename.xml			https://developer.android.com/guide/topics/resources/drawable-resource?hl=en
+			- Bitmap file: 			BitmapDrawable 		(PNG, WEBP, JPG, or GIF)			<bitmap> 
+			- Nine-patch file:		NinePatchDrawable  	(.9.png)							<nine-patch			
+			- Layer list:			LayerDrawable											<layer-list> <item android:drawable ... /> </layer-list>
+			- State list:			StateListDrawable										<selector>  <item android:state_xxx = "true|false" /> </selector>
+			- Level list:			LevelListDrawable										<level-list> <item android:drawable ... /> </level-list>
+			- Transition drawable:	TransitionDrawable										<transition> <item android:drawable ... /> </transition>
+			- Inset drawable:		InsetDrawable											<inset			
+			- Clip drawable:		ClipDrawable											<clip
+			- Scale drawable:		ScaleDrawable											<scale
+			- Shape drawable:		GradientDrawable										<shape>	<corners> <gradient> <padding> <size> <solid> <stroke>  </shape>
+			
+		+ Layout:									--> res/layout/filename.xml
+		
+		+ Menu:										--> res/menu/filename.xml				<menu> <item>  <group> <item> </group>  <menu> ... </menu>  </menu>
+			+ Using:
+				- override fun onCreateOptionsMenu(menu: Menu): Boolean {
+					menuInflater.inflate(R.menu.example_menu, menu)
+					return true
+				}
+				- fun onGroupItemClick(item: MenuItem) { }
+				
+		+ String:								https://developer.android.com/guide/topics/resources/string-resource?hl=en
+			- String array:						<string-array name="array_name"> <item>xxxStr</item> </string-array>													resources.getStringArray(R.array.planets_array)
+			- Quantity strings (plurals):		<plurals name="plurals_name"> <item quantity=["zero"|"one"|"two"|"few"|"many"|"other"]>xxx %d Str</item> </plurals>		resources.getQuantityString(R.plurals.numberOfSongsAvailable, count, count)
+			- Format string:					<string name="welcome_messages">Hello, %1$s! You have %2$d new messages.</string>										var text = getString(R.string.welcome_messages, username, mailCount)
+			- Styling with HTML markup:			<string name="welcome">Welcome to <b>Android</b>!</string>
+			- Styling with spannables:
+			- Styling with annotations:			<string name="title">Best practices for <annotation font="title_emphasis">text</annotation> on Android</string>			val annotations = titleText.getSpans(0, titleText.length, Annotation::class.java)
+		
+		+ Style:									--> res/values/filename.xml
+			- Style:							<style name="style_name"> <item name="">style_value</item> </style>
+			 
+		+ Font:										--> res/font/filename.xml
+			- Bundled font:						<font-family> <font android:font/fontStyle/fontWeight = "" /> </font-family>
+			- Downloadable font: 				<font-family android:fontProviderXXX  android:fontProviderYYY />
+			
+		+ More types:
+			- Boool:	
+			- Dimension:
+			- ID:
+			- Integer
+			- Integer array:
+			- Typed array:						
+			
+	
+3. Manifest:									https://developer.android.com/guide/topics/manifest/manifest-intro?hl=vi
+	- App level:								<manifest>																	<application>				
+	- Components:								<activity>, <activity-alias>, <provider>, <receiver>, <service>				<intent-filter>, <action>, <category>, <data>, <meta-data>
+	- Device compatibility:						<compatible-screens>
+	- Permissions:								<path-permission>, <permission>, <permission-group>, <permission-tree>		<uses-permission>, <uses-permission-sdk-23>											<grant-uri-permission>
+	- Support:									<supports-gl-texture>, <supports-screens>									<uses-configuration>, <uses-feature>, <uses-sdk>(min/maxSdk: overriden by gradle)
+	- Library:									<uses-library>, <uses-native-library>
+	- Access other apps:						<queries>
+	- Test:										<instrumentation>
+	
+	- Limit:									<package> - 1000			<meta-data> - 1000				<uses-library> - 1000
+		+ Attribute Length:						name - 1024					versionName - 1024				host - 255								mimeType - 255
+		
+	
+	- Details:
+		+ <manifest>:
+			- android:sharedUserId				-	set same UID for many app, @Deprecated from API 29				 	=android:sharedUserLabel									<-- android:sharedUserMaxSdkVersion="32"
+			- android:targetSandboxVersion		- 	1 (api < 26) [can shared UID]										2 (api >= 26) [new SELinux sandbox, usesCleartextTraffic = false, Không cho phép chia sẻ mã nhận dạng người dùng]
+			- android:installLocation			- 	"auto" | "internalOnly" | "preferExternal"
+			
+			- 
+		+ <application>
+			- 
+			- 
+		+ <activity>
+			-
+			-
+		+ 
+	
+	
+4. App Architecture
+	- 4.1. Overview
+	- 4.2. Modularization
+	- 4.3. Architecture Components
+			+  save state off UI: reboot, system kill, recent
+				+ 1. Viewmodel
+				+ 2. Save state:
+					+ Jetpack Compose: rememberSaveable.
+					+ Khung hiển thị (View): API onSaveInstanceState().
+					+ ViewModel: SavedStateHandle.
+				3. Local storage: db, share preference
+				4. SavedStateRegistry:	Activity, Fragment			
+	- 4.4. App entry points
+	- 4.5. App Naigation
+	- 4.6. Dependencies Injection
+	- 4.7. App Startup
+	
+5. Devices:
+	- Compatible:
+	- Phone & Tablet
+	- Responsive
+	- Wear
+	- TV
+	- Chrome OS
+	- SDK
+
+
+6. Google Play
+	- 
+
+
+7. Core areas
+
+
+8. Build for enterprise

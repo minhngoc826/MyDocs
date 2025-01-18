@@ -1,0 +1,142 @@
+// Summary:				https://developer.android.com/topic/libraries/architecture/viewmodel?hl=vi
+1. Lifecycle
+
+2. ViewModel:
+	- ViewModel -> ViewModelStoreOwner -> ViewModelStore <-- ViewModelProvider
+	- ViewModelProvider.Factory: pass params to ViewModel
+	- viewModelScope: ~ CoroutineScope & Closeable
+	
+	- MutableStateFlow(UiState).update { StateFlơ<UiState> -> copy }
+	- observer: uiState.collect {}, uiState.observer()
+
+
+
+1. Lifecycle
+	1.1. Class
+		- Lifecycle
+		
+		- LifecycleOwner:												-> Activity implement LifecycleOwner
+			+ public val lifecycle: Lifecycle
+			+ LifecycleOwner.lifecycleScope = lifecycle.coroutineScope
+			
+
+2. ViewModel
+	2.0. Ưu điểm: Ưu điểm chính của lớp này là khả năng lưu trạng thái vào bộ nhớ đệm và duy trì trạng thái đó khi có các thay đổi về cấu hình. 
+					Điều này có nghĩa là giao diện người dùng không phải tìm nạp lại dữ liệu khi di chuyển giữa các hoạt động hoặc áp dụng các thay đổi về cấu hình, chẳng hạn như khi xoay màn hình.
+		- caches sate:
+		- persists state through configuration changes:
+		
+		- Lớp này cho phép bạn duy trì trạng thái giao diện người dùng.
+		- Lớp này cung cấp quyền truy cập vào business logic.
+
+	2.1. Class
+
+		- ViewModel: 
+			+ class SampleViewModel: ViewModel() {}			// viewModel(modelClass) -> call ViewModelStoreOwner
+			+ methods:
+				- state:	private val _uiState: MutableStateFlow(UiState()) 
+							-> val uiState: SateFlow<UiState> = _uiState.asStateFlow() 
+							-> _uiState.update { currentState -> currentState.copy(params) }
+				- cleared():
+				
+			+ data class UiState(val params)
+		
+		
+		- ViewModelStoreOwner: 						-> Activity implement ViewModelStoreOwner;  // ComponentActivity, Fragment và NavBackStackEntry
+			+ val viewModelStore: ViewModelStore
+		
+		- ViewModelStore:
+			+ val map = mutableMapOf<String, ViewModel>()	// map(className, ViewModel)
+			
+		- ViewModelProvider: 
+			+ Access ViewModel -> ViewModelProvider(context, factory).get(SampleViewModel::class.java)  <-- create by ViewModelLazy <-- ComponentActivity.viewModels()
+			
+			+ ViewModelProvider.Factory: class SampleViewModel(name: String) : ViewModel() {} -> cần truyền tham số cho ViewModel thì dùng Factory
+				- class SampleViewModelFactory (val arg: String): ViewModelProvider.Factory {
+					override fun <T : ViewModel?> create(modelClass: Class<T>): T {
+						return   modelClass.getConstructor(String::class.java).newInstance(arg)
+					}
+				}
+				
+		
+	2.2. Lifecycle:
+		+ Activity: 	ComponentActivity		-> cleared when activity is destroyed(finished)
+		+ Fragment:		Fragment				-> cleared when fragment is detached
+		+ Composable: 	NavBackStackEntry		-> cleared when it is popedback from stack
+		
+		+ when new viewModel() -> pass ViewModelStoreOwner (Navigation destination, Navigation graph, activity, fragment, ...) -> scope of ViewModel = scope of ViewModelStoreOwner.Lifecycle, 
+				và vẫn nằm trong bộ nhớ cho đến khi ViewModelStoreOwner biến mất vĩnh viễn.
+		
+	2.3. Deploy
+		+ Observer: 
+			- way 1: viewModel.uiState.observer(viewLifecycleOwner, Observer<UiState>) { uiState -> // handle }
+			- way 2: viewModel.uiState.collect { }
+			
+		+ onCleared(): dọn dẹp
+			
+		+ Shared viewmodel from activity/fragments & fragments: by using ViewModel with scope Activity for Activity & fragments
+			- get ViewModel scope Activity from fragment: viewModel = activity?.let{ ViewModelProviders.of(it)[SharedViewModel::class.java] } ?: throw Exception("Activity is null")
+			
+		+ viewModelScope: là một CoroutineScope tích hợp sẵn tự động theo vòng đời của ViewModel
+			- change viewModelScope: chỉ nhận CoroutineScope trong hàm constructor, Khi ViewModelStoreOwner xoá ViewModel vào lúc kết thúc vòng đời, ViewModel cũng sẽ huỷ CoroutineScope
+			
+				+ class MyViewModel(private val coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)) : ViewModel() {
+					// Other ViewModel logic ...
+
+					override fun onCleared() {
+						coroutineScope.cancel()
+					}
+				}
+				
+			- from Lifecycle ver 2.5: có thể truyền một hoặc nhiều đối tượng Closeable đến hàm khởi tạo của ViewModel. Closeable sẽ tự động đóng khi thực thể ViewModel bị xoá.
+			
+				+ class CloseableCoroutineScope(context: CoroutineContext = SupervisorJob() + Dispatchers.Main.immediate) : Closeable, CoroutineScope {
+					override val coroutineContext: CoroutineContext = context
+					override fun close() {
+						coroutineContext.cancel()
+				   }
+				}
+				
+				+ class MyViewModel(private val coroutineScope: CoroutineScope = CloseableCoroutineScope()) : ViewModel(coroutineScope) {
+					// Other ViewModel logic ...
+				}
+			
+		+ Jetpack Compose:
+			- 
+		
+		+ Coroutine:
+			- 
+			
+			
+	2.4. ViewModel Scope:
+		+ Each ViewModel is scoped to an object that implements the ViewModelStoreOwner interface
+		+ Java:				
+			- Any:			MyViewModel viewModel = new ViewModelProvider(this).get(MyViewModel.class);
+		+ Kotlin:
+			- Closest ViewModelStoreOwner:	
+				+ Kotlin:	val viewModel: MyViewModel by viewModels()				// scoped to Activity, Fragment, NavBackStackEntry
+				+ Compose:	viewModel: MyViewModel = viewModel()					// destination of a Navigation graph, the host Fragment, or the host Activity.			// need lib:  androidx.lifecycle:lifecycle-viewmodel-compose
+				+ Hilt:		hiltViewModel()
+				
+			- Any ViewModelStoreOwner:
+				+ Kotlin:	val viewModel: SharedViewModel by activityViewModels()				val viewModel: SharedViewModel by viewModels(ownerProducer = { requireParentFragment() } )
+				+ Compose:	viewModel: SharedViewModel = viewModel(viewModelStoreOwner = (context as Fragment).requireActivity() / requireParentFragment())
+				
+			- scope Navigation graph:
+				+ Kotlin:
+					- val viewModel: SharedViewModel by navGraphViewModels(R.id.nav_graph)											// val viewModel: SharedViewModel by hiltNavGraphViewModels(R.id.nav_graph)
+					- val viewModel: SharedViewModel by viewModels( { findNavController().getBackStackEntry(R.id.nav_graph) } )
+				+ Compose:
+					- composable("myScreen") { backStackEntry ->
+						// Retrieve the NavBackStackEntry of "parentNavigationRoute"
+						val parentEntry = remember(backStackEntry) {
+							navController.getBackStackEntry("parentNavigationRoute")
+						}
+						// Get the ViewModel scoped to the `parentNavigationRoute` Nav graph
+						val parentViewModel: SharedViewModel = viewModel(parentEntry)												// val parentViewModel: SharedViewModel = hiltViewModel(parentEntry)
+						// ...
+					}
+			
+				+ 
+			
+			

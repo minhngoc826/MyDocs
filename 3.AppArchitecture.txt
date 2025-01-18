@@ -1,0 +1,116 @@
+//////////// PetCare //////////////
+0. Utils
+1. Domain layer
+	- model: data class
+	- DataSource: interface									// Repository
+		- suspend fun
+		
+	- Usecase(DataSource):	// Repository
+		- suspend fun =  DataSource.fun()
+2. Data layer:
+	- Local:
+		- Entity, Dao, Database
+	- Remote:
+		-  Api, Response(Entity)
+		
+	- Repository(Dao, Api) extends DataSource:				// PetJourneyRepositoryImpl: get from Api -> update to local Db = Dao
+		- 
+	- Mapper: convert onject domain layer <-> data layer
+
+3. Presentation layer: UI layer
+	- di
+		- DBModule: 
+			- providerDaos(Database)
+		- RepositoryModule:
+			- binRepository -> using in Usecase
+		- ApiModule:
+			- provideRetrofit()\
+			- provideApis()
+	- ViewModel(Usecase, Usecase):
+		- LiveData, State<T>
+	- UI: 
+		- Activity, Fragment
+		- Compose:
+////////////////////////
+//////////// PetCare //////////////
+////////////////////////
+
+0. Common:
+
+1. Data layer: 
+	- model
+		- Local: 
+			- Entities:	Message, Conversation, User, Like, Icons
+			- DAO:		MessageDao, ...
+			- Database: RoomDb
+		- Remote:
+			- API:		
+			- Response:	
+	- DataSource: [Usecase, DAO]:  LocalDataSourceImpl / RemoteDataSourceImpl
+	- Repository(DataSource)
+	
+2. Domain layer: 	implement(":data")
+	- ViewModel, LiveData
+	- 
+3. UI layer:		implement(":data")		implement(":domain")
+	- Activity / Fragment
+	- Composable
+
+
+
+//////////// SamsungInCallUI //////////////
+0. Common
+1. 
+2. Model / ModelImpl
+	- Model:
+		- model:		interface -> methods
+		- DataSource: 	interface	-> LiveData
+		
+	- ModelImpl:
+		- modelImpl:	decrale variables + override methods +  LiveData
+		- Repository:	extends DataSource
+			- other Repository
+			- get LiveData
+	
+
+3. ViewModel / ViewModelImplement
+	- ViewModel: interface
+		- ViewModelsManager: 	getExecutors
+		- Executor:				get LiveData() / execute action = set LiveData
+			- CommonExecutors:	provider Executor()
+			- 
+		- Flow:					Dependency extends DataSources
+		- ActionCommandUi:
+		- LiveDataUi:			interface : set(ViewModelsManager)
+		
+		- ViewModel:			interface extends LiveDataUi, ActionCommandUi
+			- execute action()
+			- provider Executor
+	- ViewModelImpl: implement ViewModel
+		- ViewModelsManagerImpl:
+		- ExecutorImpl: implement Executor
+			- val Repository / provider Repository
+			- val LiveData:	
+			- execute():		set LiveData
+		- FlowImpl:	
+		- ActionCommandUiImpl:	onAction() -> Executor call execute() -> set LiveData
+		- LiveDataUiImpl:		implement LiveDataUi: set(ViewModelsManager) -> get Executor -> provider Executor -> get LiveData
+		- Module:				provider Executor
+		
+		- ViewModelImpl:		implement ViewModel -> provider Executor, 
+		
+3. App
+	- ViewModel
+
+////////////////////////
+
+4. App Architecture
+	- 4.1. Overview
+	- 4.2. Modularization
+	- 4.3. Architecture Components
+	- 4.4. App entry points
+	- 4.5. App Naigation
+	- 4.6. Dependencies Injection
+	- 4.7. App Startup
+	
+	

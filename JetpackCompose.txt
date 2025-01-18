@@ -1,0 +1,358 @@
+/////// Ưu điểm của Jetpack Compose
+- Dễ học: 			Jetpack Compose dễ học hơn so với các phương pháp xây dựng giao diện người dùng truyền thống cho Android.
+- Tăng năng suất: 	Jetpack Compose giúp bạn tăng năng suất bằng cách cho phép bạn xây dựng giao diện người dùng nhanh hơn và dễ dàng hơn.
+- Hiệu suất cao: 	Jetpack Compose được tối ưu hóa cho hiệu suất cao, qua đó, giúp ứng dụng của bạn chạy mượt mà hơn.
+
+/////// So sánh chi tiết sử dụng Jetpack Compose và không sử dụng Jetpack Compose trong lập trình Android
+1. Hiệu suất
+	- Khi sử dụng Jetpack Compose: 
+		+ Hiệu suất cao do được tối ưu hóa cho việc sử dụng GPU và CPU.
+		+ Giảm thiểu việc sử dụng bộ nhớ và tài nguyên hệ thống.
+		+ Mang lại trải nghiệm người dùng mượt mà và nhạy bén.
+	- Không sử dụng Jetpack Compose
+		+ Có thể thấp hơn do sử dụng các phương thức truyền thống như XML và ViewGroups.
+		+ Tiêu thụ nhiều bộ nhớ và tài nguyên hệ thống hơn.
+		+ Trải nghiệm người dùng có thể không mượt mà và nhạy bén như khi sử dụng Jetpack Compose.
+
+2. Tính linh hoạt
+	- Sử dụng Jetpack Compose: 
+		+ Cung cấp API trực quan và dễ sử dụng để xây dựng giao diện người dùng.
+		+ Hỗ trợ nhiều thành phần UI có sẵn và khả năng tạo thành phần UI tùy chỉnh.
+		+ Cho phép tạo giao diện người dùng phức tạp một cách dễ dàng.
+	- Không sử dụng Jetpack Compose:
+		+ Việc xây dựng giao diện người dùng có thể phức tạp và tốn thời gian hơn.
+		+ Khả năng tùy chỉnh giao diện người dùng bị hạn chế bởi các thành phần UI có sẵn trong XML.
+		+ Khó khăn trong việc tạo giao diện người dùng phức tạp.
+
+3. Khả năng bảo trì
+	- Sử dụng Jetpack Compose:
+		+ Code dễ đọc và dễ hiểu hơn do sử dụng cú pháp khai báo.
+		+ Dễ dàng sửa lỗi và bảo trì giao diện người dùng.
+		+ Giúp giảm thiểu code boilerplate.
+	- Không sử dụng Jetpack Compose:
+		+ Code có thể khó đọc và khó hiểu hơn do sử dụng XML và Java.
+		+ Việc sửa lỗi và bảo trì giao diện người dùng có thể khó khăn hơn.
+		+ Code có thể chứa nhiều boilerplate.
+
+4. Khả năng tương thích
+	- Sử dụng Jetpack Compose:
+		+ Hỗ trợ đa nền tảng (Android, iOS, Web) với Kotlin Multi Platform Mobile (KMM).
+		+ Cho phép chia sẻ code giao diện người dùng giữa các nền tảng.
+	- Không sử dụng Jetpack Compose:
+		+ Việc chia sẻ code giao diện người dùng giữa các nền tảng khó khăn hơn.
+		+ Cần viết code riêng cho từng nền tảng
+		
+////////// SUMMARY ////////////////////////////////////////////////////
+1. 
+
+////////// JetPackCompose ////////////////////////////////////////////////////
+1. Introduction
+
+2. UI architect
+	2.1. Lifecycle
+		- Lifecycle: Vòng đời của một thành phần kết hợp được xác định bằng những sự kiện sau: nhập thành phần Compose, kết hợp lại 0 lần trở lên và rời khỏi thành phần Compose.
+			+ Quá trình kết hợp lại thường được kích hoạt khi có thay đổi đối với đối tượng State<T>. Compose sẽ theo dõi quá trình thay đổi này, đồng thời chạy tất cả thành phần kết hợp 
+				trong thành phần Compose có khả năng đọc State<T> và bất kỳ thành phần kết hợp quá trình này gọi mà không thể bỏ qua.
+			
+			+ Quản lý state với subView (subComposable): 
+				- separate composables: 	define by location of call: if input of a location composable is not changed -> not recomposition
+				- similar composables:		(like list item: insert, delete, move item) -> location change -> wrong: kết hợp location + key of item (mã nhận dạng) -> if key of location change -> recomposition
+											for (movie in movies) {
+												key(movie.id) { // Unique ID for this movie
+													MovieOverview(movie)
+												}
+											}
+			
+			+ Skip recomposition:	if the inputs haven't changed
+				- not skip recomposition if function is:
+					+ annotated with @NonRestartableComposable hoặc @NonSkippableComposable
+					+ return value is not Unit
+					+ A required parameter is of a non-stable type
+				
+				- skip recomposition if input haven't changed ~ immutable:		https://developer.android.com/develop/ui/compose/lifecycle?hl=vi
+					+ @Stable
+					+ The result of equals for two instances will forever be the same for the same two instances.
+					+ If a public property of the type changes, Composition will be notified.
+					+ All public property types are also stable.
+
+	
+	2.2. Side-effects: change state outside of scope -> đảm bảo rằng công việc bạn thực hiện trong đó có liên quan đến giao diện người dùng và không làm hỏng luồng dữ liệu một chiều		// https://developer.android.com/develop/ui/compose/side-effects?hl=vi
+		- LaunchedEffect:			run suspend function in the scope of composable -> only using in a composable
+			+ khởi chạy một coroutine với khối mã được truyền dưới dạng tham số. Coroutine sẽ bị huỷ nếu LaunchedEffect thoát khỏi thành phần đó.									// LaunchedEffect(key=pulseRateMs) { TODO }
+			+ khi key changed -> coroutine hiện có sẽ bị huỷ và new suspend function sẽ được khởi chạy trong coroutine mới															// LaunchedEffect(true) {} ~ while(true) {}
+			
+			+ DisposableEffect:
+		
+		- rememberCoroutineScope:	run coroutine outside a composable, but scoped by composable -> if composable is destroy (leaves the composition) -> coroutine is cancled		// scope = rememberCoroutineScope() -> scope.launch {}
+		
+		- rememberUpdatedState:		>< LaunchedEffect: not restart effect when key changed:																							// val currentOnTimeout by rememberUpdatedState(onTimeout)	
+		
+		- DisposableEffect:			effects that require cleanup -> if key changed -> dispose = cleanup for current effect, reset by calling effect again.							// DisposableEffect(lifecycleOwner) { TODO onDispose {} }
+			+ lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current			val observer = LifecycleEventObserver { _, event -> TODO }			lifecycleOwner.lifecycle.addObserver(observer)		onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+		
+		- SideEffect:				publish Compose state to non-Compose code = share Compose state with objects not managed by compose												// SideEffect { TODO }
+			+ guarantees that the effect executes after every successful recomposition.
+			
+		- produceState:				convert non-Compose state into Compose state -> launches a coroutine scoped to the Composition that can push values into a returned State		// produceState(initialValue = Result.Loading, keys=xxx) { TODO }
+		
+		- derivedStateOf:			convert one or multiple state objects into another state -> when state changed many times but UI don't changed much								// derivedStateOf { lazyListState.firstVisibleItemIndex > 0 }	~ distinctUntilChanged()
+			+  hao tốn nhiều tài nguyên, và bạn chỉ nên dùng để tránh việc kết hợp lại không cần thiết khi kết quả không thay đổi.
+			
+		- snapshotFlow: 			convert Compose's State into Flows	->  State<T> thành Flow																						// (snapshotFlow { stateObject }).map().distinctUntilChanged().filter().collect {}
+			+ Khi một trong các đối tượng State được đọc bên trong khối snapshotFlow thay đổi, Flow sẽ tạo ra giá trị mới cho bộ sưu tập của nó nếu giá trị mới không bằng giá trị được tạo ra trước đó (hành vi này tương tự như hành vi của Flow.distinctUntilChanged).
+			
+		- reset Effect:
+			+ LaunchedEffect, DisposableEffect, produceState: keys changed -> reset
+			+ if some key changed but state not changed: 	using rememberUpdatedState for key
+		
+		
+	2.3. Phases:
+		- Android View:		data -> 				measure -> 	layout -> 						drawing -> 			UI
+		- Compose:			data -> composition -> 				layout (measure + location) -> 	drawing (Canvas) -> UI							
+			+ Cho phép dữ liệu truyền theo một hướng từ thành phần đến bố cục đến bản vẽ để tạo một khung (còn gọi là luồng dữ liệu một chiều). 
+				BoxWithConstraintsvà LazyColumn vàLazyRow là các trường hợp ngoại lệ đáng chú ý, trong đó thành phần của tệp con phụ thuộc vào giai đoạn bố cục của tệp mẹ.
+			+ composition: 	run Composables và cho ra một cấu trúc cây đại diện cho giao diện người dùng. Cây giao diện người dùng này bao gồm các nút bố cục chứa tất cả thông tin cần thiết cho các giai đoạn tiếp theo
+			+ layout:		tree UI -> Tập hợp các nút bố cục chứa tất cả thông tin cần thiết để quyết định kích thước và vị trí của từng nút trong không gian 2D. (note con measure w & h, tọa độ x & y -> report note cha -> note cha measure self)
+			+ draw:			cây được di chuyển từ trên xuống dưới và mỗi nút sẽ lần lượt vẽ chính nó trên màn hình
+		
+		- State reads:			import setter / getter
+			+ State<T> -> .value / var:
+				- val paddingState: MutableState<Dp> = 	remember { mutableStateOf(8.dp) } 		-> 		paddingState.value
+				- var padding: 		Dp by 				remember { mutableStateOf(8.dp) }		->		padding
+
+			+ Composition
+			+ Layout:			Layout, MeasureScope.measure, Modifier.offset
+			+ Draw:				Canvas(modifier = modifier) { }, Modifier.drawBehind và Modifier.drawWithContent
+			
+			+ Optimize:			
+			
+	
+	2.4. Managing State:
+		- Composition: 
+			+ Init composition -> state changed -> recomposition
+		
+		- remember:	để lưu trữ đối tượng trong bộ nhớ		-> mutableStateOf & immutableStateOf
+		
+		- mutableStateOf: tạo ra MutableState<T> có thể quan sát. Đây là một loại đối tượng có thể quan sát được tích hợp với thời gian chạy Compose.
+			+ interface MutableState<T> : State<T> { override var value: T }
+			+ 3 way to declare MutableState:
+				- val mutableState 			= 	remember { mutableStateOf(default) }
+				- var value 				by 	remember { mutableStateOf(default) }
+				- val (value, setValue) 	= 	remember { mutableStateOf(default) }
+				
+				+ by: delegate -> require: 	import androidx.compose.runtime.getValue						import androidx.compose.runtime.setValue
+		
+		- rememberSaveable:
+			+ remember: 		save state in mem for recomposition, but not keep value if channge configuration 
+			+ rememberSaveable:	auto save state to Bundle
+				- rememberSaveable sẽ không giữ lại trạng thái nếu người dùng đóng hoàn toàn activity. 
+					Ví dụ: tính năng này không giữ lại trạng thái nếu người dùng vuốt activity hiện tại lên từ màn hình gần đây.
+			
+			+ Note: using ArrayList<T> hoặc mutableListOf() làm trạng thái trong Compose, người dùng sẽ thấy dữ liệu không chính xác hoặc lỗi thời trong ứng dụng của bạn. 
+				Khi thay đổi, các đối tượng có thể thay đổi và không thể quan sát (chẳng hạn như ArrayList hoặc một lớp dữ liệu có thể thay đổi) sẽ không kích hoạt việc tái 
+				cấu trúc và Compose sẽ không quan sát được những đối tượng này.
+				
+		- Other states: convert object to State<T> để các thành phần kết hợp có thể tự động kết hợp lại khi trạng thái thay đổi.
+			+ Flow: 		collectAsState()						// có sẵn trong compose-runtime, using cho mã không phụ thuộc vào nền tảng thay vì collectAsStateWithLifecycle, vốn chỉ dành cho Android.
+			+ Flow: 		collectAsStateWithLifecycle()			// need:		implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")	// FLow -> State, same collectAsState()
+			
+			+ LiveData: 	observeAsState()						// need:		implementation("androidx.compose.runtime:runtime-livedata:1.7.5")		// LiveData -> State: LiveData<T>.observeAsState()
+			+ RxJava2/3: 	subscribeAsState()						// need:		implementation("androidx.compose.runtime:runtime-rxjava2/3:1.7.5")		//  Single, Observable, Completable -> State
+			
+			
+		- State full:	using remember in @Composable																	@Composable <- -> View (Content)		// State ->, Event <-
+		
+		- State less:	~State hoisting: chuyển trạng thái lên trên -> save state in ViewModel		ViewModel 	<- -> 	@Composable <- -> View (Content)		// State ->, Event <-
+			+ Mô hình chung để di chuyển trạng thái lên trên trong Jetpack Compose là thay thế biến trạng thái bằng 2 tham số:
+			+ value: T: giá trị hiện tại để hiển thị
+			+ onValueChange: (T) -> Unit: một sự kiện yêu cầu thay đổi giá trị này, trong đó T là giá trị mới được đề xuất
+			+ Ưu điểm:
+				- Single source of truth: 		Bằng cách di chuyển trạng thái thay vì sao chép, chúng tôi đảm bảo rằng chỉ có một nguồn thông tin duy nhất. Điều này giúp tránh các lỗi.
+				- Được đóng gói (encapsulated): Chỉ các thành phần kết hợp có trạng thái mới có thể sửa đổi trạng thái của chúng. Nó có tính nội bộ hoàn toàn.
+				- Có thể chia sẻ (shareable): 	Bạn có thể chia sẻ trạng thái được di chuyển lên trên với nhiều thành phần kết hợp. Nếu bạn muốn đọc name trong một thành phần kết hợp khác, việc di chuyển trạng thái lên trên sẽ cho phép bạn làm việc đó.
+				- Có thể chắn (interceptable): 	phương thức gọi đến các thành phần kết hợp không trạng thái có thể quyết định bỏ qua hoặc sửa đổi các sự kiện trước khi thay đổi trạng thái.
+				- Được tách riêng (decoupled): 	trạng thái của các thành phần kết hợp không có trạng thái có thể được lưu trữ ở bất cứ đâu. Ví dụ: bạn hiện có thể di chuyển name sang ViewModel.
+				
+			+ Vị trí chuyển state: https://developer.android.com/develop/ui/compose/state-hoisting?hl=vi#plain-state
+				
+		- Restoring state in Compose:
+			+ remember:				
+			+ rememberSaveable:		save state to bundle		<onConfigChanged|localizeChanged|darkMode>		remember
+			+ not save to Bundle:	using with rememberSaveable
+				- Parcelize:		@Parcelize	data class City(val name: String, val country: String) : Parcelable		// The object becomes parcelable, and can be bundled.
+									var selectedCity = rememberSaveable { mutableStateOf(City("Madrid", "Spain")) }
+									
+				- MapSaver:			val CitySaver = run {																// define rule for converting an object into a set of values that the system can save to the Bundle
+										val nameKey = "Name"
+										val countryKey = "Country"
+										mapSaver(
+											save = { mapOf(nameKey to it.name, countryKey to it.country) },
+											restore = { City(it[nameKey] as String, it[countryKey] as String) }
+										)
+									}
+									var selectedCity = rememberSaveable(stateSaver = CitySaver) { mutableStateOf(City("Madrid", "Spain")) }
+									
+				- ListSaver:		val CitySaver = listSaver<City, Any>(												// To avoid needing to define the keys for the map
+										save = { listOf(it.name, it.country) },
+										restore = { City(it[0] as String, it[1] as String) }
+									)
+									var selectedCity = rememberSaveable(stateSaver = CitySaver) { mutableStateOf(City("Madrid", "Spain")) }
+
+		- State holders in Compose:  	~ hoisted state object: manage logic and state of composables.
+			+ Holders business logic:	ViewModel, có thể tích hơp với Navigation -> uiState
+			+ Holders UI logic:			remember, rememberSaveable[ rememberScaffoldState() / rememberLazyListState() / rememberNavController() ] 		- do lib cung cấp
+										và các object state khác chỉ liên quan đến UI: navController, WindowSizeClass, ...								- custome state 		// https://developer.android.com/topic/architecture/ui-layer/stateholders?hl=vi#choose_between_a_viewmodel_and_plain_class_for_a_state_holder
+			+ suspens function:			1 số hàm suspend có scope ViewModelScope throw IllegalStateException (MonotonicFrameClock) khi gọi từ Compose UI --> using CoroutineScop of UI = rememberCoroutineScope() 		// LazyListState.animateScrollTo() and DrawerState.close().
+										fun closeDrawer(uiScope: CoroutineScope) { // ViewModel side							// Composable side: uiScope = rememberCoroutineScope()
+											viewModelScope.launch {
+												withContext(uiScope.coroutineContext) { // Use instead of the default context
+													drawerState.close()					// LazyListState.animateScrollTo()
+												}
+											}
+										}
+			
+		- Remember state with key: value only changed when key changed, if key is not changed, not need calculate again for state
+			+ remember(key1 = avatarRes) / remember(windowSizeClass):		key = avatarRes, windowSizeClass
+		
+		- Save UI state : reboot, system kill, recent, Configuration changes, User kill					// https://developer.android.com/develop/ui/compose/state-saving?hl=vi
+			+ UI State:		rememberSaveable
+				- primitive types:		remember / rememberSaveable
+				- Object:				@Parcelize, ListSaver, MapSaver, @Saver custom					// LazyListState using LazyListState.Saver: hold scroll state
+					+ @Composable
+					fun rememberLazyListState(
+						initialFirstVisibleItemIndex: Int = 0,
+						initialFirstVisibleItemScrollOffset: Int = 0
+					): LazyListState {
+						return rememberSaveable(saver = LazyListState.Saver) {
+							LazyListState(
+								initialFirstVisibleItemIndex, initialFirstVisibleItemScrollOffset
+							)
+						}
+					}
+					
+				- rememberSaveable /  onSaveInstanceState(): save ui state to Bundle -> TransactionTooLarge in runtime if using single activity -> bạn không nên lưu trữ các đối tượng vừa lớn lại vừa phức tạp hoặc không nên lưu trữ danh sách đối tượng trong gói. 
+																																					Thay vào đó, hãy lưu trữ trạng thái tối thiểu cần thiết, chẳng hạn như mã nhận dạng hoặc khoá
+				- Testing:	
+					+ StateRestorationTester:
+			
+			+ Logic business:	
+				- SavedStateHandle: ViewModel save state but can not save if system kill, user kill, power off, reboot -> using SavedStateHandle: 	var filteredData: List<String> by savedStateHandle.saveable { mutableStateOf(emptyList()) } // class SavedStateViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel() {}
+					+ Dữ liệu có trong SavedStateHandle được lưu và khôi phục dưới dạng Bundle cùng với phần còn lại của savedInstanceState cho activity / fragment: primitive type, @Parcelable, Serializable, Binder, Bundle, ArrayList, Size / SizeF
+					+ setSavedStateProvider():	using SavedStateProvider  to set/get state 					https://developer.android.com/topic/libraries/architecture/viewmodel/viewmodel-savedstate?hl=vi#savedstate-compose-state
+					+ Testing: @Before
+								fun setup() {
+									val savedState = SavedStateHandle(mapOf("someIdArg" to testId))
+									viewModel = MyViewModel(savedState = savedState)
+								}
+					+ API:	
+						- SavedStateHandle.saveable()		 	= Compose state (MutableState)				var message by savedStateHandle.saveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
+						- SavedStateHandle.getStateFlow()		= StateFlow									private val savedFilterType: StateFlow<ChannelsFilterType> = savedStateHandle.getStateFlow(key = CHANNEL_FILTER_SAVED_STATE_KEY, initialValue = ChannelsFilterType.ALL_CHANNELS )
+			
+			+ 1. Viewmodel
+			+ 2. Save state:
+				- Jetpack Compose: rememberSaveable.													//  primitive types
+				- Khung hiển thị (View): API onSaveInstanceState().
+				- ViewModel: SavedStateHandle.															// https://developer.android.com/topic/libraries/architecture/saving-states
+			+ 3. Local storage: db, share preference
+			+ 4. SavedStateRegistry:	Activity, Fragment													// https://developer.android.com/topic/libraries/architecture/saving-states?hl=vi#onsaveinstancestate
+		
+		2.5. Architecting your Compose UI
+			+ 
+
+4. App Layout
+	- Flow Layout:
+
+
+5. View
+	+ TopAppBar:	ContainerHeight default = 64.dp, is set by TopAppBarTokens (internal object)
+		- TabLayout: val selectedTabId 	- 	TabRow(tabs = { Tab(icon=) Tab(icon=) } )
+	
+
+
+20. Compose and other libs:		https://developer.android.com/develop/ui/compose/libraries?hl=vi#streams
+	- Compose & Activity:		use ComponentActivity to using Compose in Activity
+		+ ComponentActivity:	lớp con của Activity cung cấp LifecycleOwner thích hợp và các thành phần cho Compose. 
+								Lớp con này cũng cung cấp các API bổ sung giúp tách mã khỏi các phương thức ghi đè trong lớp hoạt động của bạn. 
+								Activity Compose hiển thị những API này với các thành phần kết hợp sao cho không cần phải ghi đè những phương thức diễn ra bên ngoài các thành phần kết hợp hoặc truy xuất một thực thể Activity rõ ràng. 
+								Thêm vào đó, các API này đảm bảo chúng chỉ được khởi chạy một lần, duy trì quá trình tái cấu trúc, đồng thời dọn dẹp đúng cách nếu thành phần kết hợp bị xoá khỏi cấu trúc.
+								
+		+ rememberLauncherForActivityResult()
+		
+	- Permission: 				RequestPermission / RequestMultiplePermissions
+	
+	- Back press:				BackHandler(backHandlingEnabledBoolean) { // Handle back press }
+	
+	- ViewModel:				using viewModel() with gradle: 			implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.8.5'  -> default: trả về một ViewModel hiện có hoặc tạo một ViewModel mới
+		+ Scope:				scope of caller (activity, fragment, navigation) -> đồng thời được giữ lại chừng nào phạm vi còn hoạt động.
+		+ Nếu ViewModel có các phần phụ thuộc, viewModel() sẽ lấy ViewModelProvider.Factory tuỳ ý làm tham số
+		
+	- Other types:
+		+ LiveData.observeAsState():		androidx.compose.runtime:runtime-livedata:$composeVersion
+		+ Flow.collectAsState():			not need lib
+		+ Observable.subscribeAsState():	
+		+ Observable.subscribeAsState():	androidx.compose.runtime:runtime-rxjava2/3:$composeVersion
+		
+	- Synchronize:				by using coroutine: LaunchedEffect, produceState và rememberCoroutineScope
+	
+	- Navigation:				NavHostController / NavHost
+	
+	- Hilt:						@HiltViewModel		implementation 'androidx.hilt:hilt-navigation-compose:1.2.0'
+		+ Hilt vs Navigation:						implementation 'androidx.hilt:hilt-navigation-compose:1.2.0'
+			NavHost(navController, startDestination = startRoute) {
+				composable("example") { backStackEntry ->
+					// Creates a ViewModel from the current BackStackEntry
+					// Available in the androidx.hilt:hilt-navigation-compose artifact
+					val viewModel = hiltViewModel<MyViewModel>()
+					MyScreen(viewModel)
+				}
+				// for parent
+				composable("exampleWithRoute") { backStackEntry ->
+					val parentEntry = remember(backStackEntry) {
+						navController.getBackStackEntry(route = "Parent")
+					}
+					val parentViewModel = hiltViewModel<ParentViewModel>(parentEntry)
+					ExampleWithRouteScreen(parentViewModel)
+				}
+			}
+	
+	- Paging:
+		+ flow: Flow<PagingData<String>>: 		flow.collectAsLazyPagingItems()
+		
+	
+	- Maps:		để tích hợp Google Maps								https://developers.google.com/maps/documentation/android-sdk/maps-compose?hl=vi
+		+ 
+	
+///////////////
+LaunchedEffect / DisposableEffect.
+WindowSizeClass
+derivedStateOf:		https://medium.com/androiddevelopers/jetpack-compose-when-should-i-use-derivedstateof-63ce7954c11b
+lazyListState
+@Stable:			https://medium.com/androiddevelopers/jetpack-compose-stability-explained-79c10db270c8		LazyListState
+snapshotFlow 
+
+internal object
+sealed class
+
+
+Bạn có thể sử dụng từ khoá by để xác định count dưới dạng một var. Việc thêm lệnh nhập getter và setter của phần tử uỷ quyền cho phép chúng ta đọc và thay đổi count 
+	một cách gián tiếp mà không cần tham chiếu rõ ràng đến thuộc tính value của MutableState mọi lần.
+
+// keyboard show/hide:  android:windowSoftInputMode="adjustResize" & Modifier.imePadding()
+
+@HiltViewModel
+class AuthorViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
+    private val authorsRepository: AuthorsRepository,
+    newsRepository: NewsRepository
+) : ViewModel() {
+
+    val uiState: StateFlow<AuthorScreenUiState> = …
+
+    // Business logic
+    fun followAuthor(followed: Boolean) {
+      …
+    }
+}
+
+		
+		

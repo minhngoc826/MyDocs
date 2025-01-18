@@ -1,0 +1,443 @@
+// Contents
+
+1. Overview: 
+	- Class: 				NavGraph, NavHostController, NavHost/NavHostFragment, NavDestination, Route(NavBackStackEntry.toRoute<Route>(), SavedStateHandle.toRoute<Route>(), NavArgument)
+							NavGraphBuilder, NavType, NavDeepLinkRequest, NavAction
+	- Navigate:				composable(route = xx) { ComposableScreen() } = composable<route> { backStackEntry -> ComposableScreen() }
+	- Destination types:	hosted, dialog, activity	-> composable<route> {}, dialog<route> {} / dialog<Fragment, route> {}, activity<route> {}, fragment<Fragment, route> {}
+2. Navigation:
+	- Compose:		composable<route> {}
+	- Fragment:		fragment<Fragment, route> {}
+3. Destination:
+	- Dialog:					dialog<route> {} / dialog<Fragment, route> {}
+	- Activity:					activity<route> { label = ""	activityClass = MyActivity::class }
+	- Custom Destination type: 	add new Navigator to NavController --> using getNavigatorProvider().addNavigator(navigator)
+4. Nested Graph:
+				- NavHost(navController, startDestination = Start) {
+					composable<Start>, composable<Register>, navigation<Game>(startDestination = Match) { composable<Match>, composable<InGame>, composable<ResultWinner>, composable<GameOver> }
+				}
+5. Deep links: handleDeepLink() <-- onNewIntent()
+	- explicit:	NavDeepLinkBuilder(context).setGraph(R.navigation.nav_graph).setDestination(R.id.android).setArguments(args).setComponentName().createPendingIntent() / NavController.createDeepLink()
+	- implicit:	
+		+ <deepLink app:uri/action/mimeType/> 		& 		<activity> <nav-graph android:value="@navigation/nav_graph" /> </activity> 
+		+ deepLink<Route> { basePath = "" 	action = "" 	mimeType="" }
+6. Type safety:
+	- @Serializable object Route	/ 	@Serializable data class Route(params: String)
+7. Encapsulate navigation
+	- NavGraphBuilder.extendDestination()
+	- NavController.extendNavigate()
+	- Using internal: 
+8. Animations
+9. 
+
+
+// Details
+
+1. Overview
+	- gradle: "androidx.navigation:navigation-compose:version"  / navgation-compose/ -fragment/ -ui/ -dynamic-features-fragment/ -testing
+
+	- NavGraph:					map composable - destination
+	- NavHostController:		navigate = redirect ( = rememberNavController() )
+		+ contains list[Navigator] -> navigate:
+			- Activity:	using ActivityNavigator & ActivityNavigator.Destination
+			- Fragment:	using FragmentNavigator (NavHostFragment add FragmentNavigator to NavController)
+	- NavHost/NavHostFragment:	show destination base on route (Composable show another composable base on route)  ( = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment )
+	- NavDestination:		
+	- Route:					Any serializable data type.
+	
+	- find navController:
+		+ Fragment.findNavController() 						+ NavHostFragment.findNavController(Fragment)					 = NavHostFragment.navController  
+		+ View.findNavController()							+ Navigation.findNavController(Activity, @IdRes int viewId)
+		+ Activity.findNavController(viewId: Int)			+ Navigation.findNavController(View)
+		
+	- Destination types:
+		+ hosted: 	same size, previous destinations are not visible 				-> Main & details screen
+			- composable<Home> { HomeScreen(onNavigateToSettings = { navController.navigate(route = Settings) }) }
+		+ dialog:	overlay UI, previous destinations are visible underneath		-> Alert, selections, forms
+			- dialog<Settings> { SettingsScreen() }
+		+ activity:	exit point to the navigation graph when interacting with third party activities or as part of the migration process
+			- activity<MyRoute> {
+				label = getString(R.string.activity_title)
+				// custom argument types, deepLinks...
+				activityClass = MyActivity::class 
+			}
+	
+	- Benefit:
+		+ Animations and transitions: Provides standardized resources for animations and transitions.
+		+ Deep linking: Implements and handles deep links that take the user directly to a destination.
+		+ UI patterns: Supports patterns such as navigation drawers and bottom navigation with minimal additional work.
+		+ Type safety: Includes support for passing data between destinations with type safety.
+		+ ViewModel support: Enables scoping a ViewModel to a navigation graph to share UI-related data between the graph's destinations.
+		+ Fragment transactions: Fully supports and handles fragment transactions.
+		+ Back and up: Handles back and up actions correctly by default.
+	
+	
+2. Navigation:
+	- 2.1. Compose 
+		+ Using NavHost(): As part of the NavHost
+			NavHost(navController = rememberNavController(), startDestination = Profile) {
+				composable<Profile> { ProfileScreen( /* ... */ ) }
+				composable<FriendsList> { FriendsListScreen( /* ... */ ) }
+				// Add more destinations similarly.
+				composable(route = FriendsList) { FriendsListScreen( /* ... */ ) }
+			}
+			
+		+ Programmatically: NavController.createGraph()
+			val navGraph by remember(navController) {
+			  navController.createGraph(startDestination = Profile)) {
+				composable<Profile> { ProfileScreen( /* ... */ ) }
+				composable<FriendsList> { FriendsListScreen( /* ... */ ) }
+			  }
+			}
+			NavHost(navController, navGraph)
+			
+		+ Pass param to destination: @Serializable
+			- object Profile / data object Profile: 	no param			~= Profile::class (KClass<T>)
+			- data class Profile(val name: String):		pass param
+			
+		+ Navigate:
+			- current route: = NavBackStackEntry.toRoute<Route>() / SavedStateHandle.toRoute<Route>()
+				composable<Profile> { backStackEntry ->
+					val profile: Profile = backStackEntry.toRoute<Profile>()
+					ProfileScreen(name = profile.name)
+				}
+
+
+	- 2.2. Fragment
+		+ Programmatically: 		NavHostFragment -> createGraph
+			- NavHostFragment: XML -> layout -> FragmentContainerView: id/nav_host_fragment"		name = "androidx.navigation.fragment.NavHostFragment"		and without navGraph attribute
+			- code:
+				+ find navController: val navController = findNavController(R.id.nav_host_fragment)
+				+ createGraph: fragment<ProfileFragment, Profile> { label = "Profile" }					fragment<FriendsListFragment, FriendsList>() { label = "Friends List" }
+		
+		+ XML:
+			- NavHostFragment: XML -> layout -> FragmentContainerView: id/nav_host_fragment"		name = "androidx.navigation.fragment.NavHostFragment"		app:navGraph="@navigation/nav_graph"
+			- navigation: 
+				+ <navigation xmlns:android="http://schemas.android.com/apk/res/android"
+					xmlns:app="http://schemas.android.com/apk/res-auto"
+					android:id="@+id/nav_graph"
+					app:startDestination="@id/profile">
+					<fragment
+						android:id="@+id/profile"
+						android:name="com.example.ProfileFragment"
+						android:label="Profile">
+						<action												<!-- Action to navigate from Profile to Friends List. -->
+							android:id="@+id/action_profile_to_friendslist"			<-- navigate: 
+							app:destination="@id/friendslist" />
+					</fragment>
+					<fragment
+						android:id="@+id/friendslist"
+						android:name="com.example.FriendsListFragment"
+						android:label="Friends List" />
+				</navigation>
+			
+			- 
+		
+		+ Android Studio editor: 	
+	
+
+3. Destination
+	- 3.1. Dialog:
+		+ Compose:
+			- dialog<Settings> { SettingsScreen() }
+			
+		+ Fragment:
+			- navController.graph = navController.createGraph( startDestination = Home ) { // Add the graph to the NavController with `createGraph()`.
+				fragment<HomeFragment, Home> { // Associate the home route with the HomeFragment.
+					label = "Home"
+				}
+				dialog<SettingsFragment, Settings> { // Define the settings destination as a dialog using DialogFragment.
+					label = "Settings"
+				}
+			}
+			
+		+ XML:
+			- <?xml version="1.0" encoding="utf-8"?>
+			<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+						xmlns:app="http://schemas.android.com/apk/res-auto"
+						android:id="@+id/nav_graph">
+				...
+				<dialog
+					android:id="@+id/my_dialog_fragment"
+					android:name="androidx.navigation.myapp.MyDialogFragment">
+					<argument android:name="myarg" android:defaultValue="@null" />
+						<action
+							android:id="@+id/myaction"
+							app:destination="@+id/another_destination"/>
+				</dialog>
+			...
+			</navigation>
+		
+
+	- 3.2. Activity:
+		+ Programmatically:
+			- activity<MyRoute> {
+				label = getString(R.string.activity_title)
+				// custom argument types, deepLinks...
+				activityClass = MyActivity::class 
+			}
+		
+		+ XML:
+			- <?xml version="1.0" encoding="utf-8"?>
+			<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+				xmlns:app="http://schemas.android.com/apk/res-auto"
+				android:id="@+id/navigation_graph"
+				app:startDestination="@id/simpleFragment">
+
+				<activity
+					android:id="@+id/localDestinationActivity"
+					android:label="@string/localActivityTitle"
+					
+					// = startActivity(Intent(context, DestinationActivity::class.java))
+					android:name="com.example.android.navigation.activity.DestinationActivity"
+					app:targetPackage="com.example.android.another.app" 							// using for owner app or another app
+					//
+					
+					// if activity has intent-filter: action, data
+					app:action="android.intent.action.VIEW"
+					app:data="https://example.com"
+					//
+					
+					// Dynamic argument for data
+					app:dataPattern="https://example.com?userId={userId}"							<-- set argument: navController.navigate( R.id.localDestinationActivity, bundleOf("userId" to "someUser") )
+					<argument
+						android:name="userId"
+						app:argType="string" />
+					//
+				/>
+			</navigation>
+	
+	- 3.3. Custom Destination: add new Navigator to NavController --> using getNavigatorProvider().addNavigator(navigator)
+		+ val customNavigator = CustomNavigator()			-->			navController.navigatorProvider += customNavigator
+		+ unary plus operator: 	+navigatorProvider[CustomNavigator::class].createDestination().apply { route = Graph.CustomDestination.route }
+		+ add:					val customDestination = navigatorProvider[CustomNavigator::class].createDestination().apply { route = Graph.CustomDestination.route }
+								addDestination(customDestination)
+								
+		+ destination arguments: need @Serializable
+			- custom types with NavType: https://developer.android.com/guide/navigation/design/kotlin-dsl?hl=en
+		
+
+4. Nested graph:					https://developer.android.com/guide/navigation/design/nested-graphs?hl=vi
+	- Game's routes flow: 			Start -> Register -> 						Match -> InGame (play game) -> ResultWinner/ GameOver -> Match
+	- Create nested graph:			Start -> Register -> Game(Nested graph) ->	Match -> InGame (play game) -> ResultWinner/ GameOver -> Match
+	- Code: NavHost(navController, startDestination = Start) {
+				composable<Start>, composable<Register>, navigation<Game>(startDestination = Match) { composable<Match>, composable<InGame>, composable<ResultWinner>, composable<GameOver> }
+			}
+	- XML:
+		+ <navigation> 
+			<navigation id=action_mainFragment_to_sendMoneyGraph>  			<-- view.findNavController().navigate(R.id.action_mainFragment_to_sendMoneyGraph)
+				<fragment /> 
+			</navigation>
+		</navigation>
+		
+		+ <include>: same include layout
+		
+5. Deep links:
+	- explicit: NavDeepLinkBuilder / NavController.createDeepLink()  --> the task back stack is cleared and replaced with the deep link destination, include the start destination of nested-graph
+		+ pendingIntent = NavDeepLinkBuilder(context).setGraph(R.navigation.nav_graph).setDestination(R.id.android).setArguments(args).createPendingIntent()
+			.setComponentName(DestinationActivity::class.java / ComponentName)  // if NavHost is in other activity
+		
+	- implicit: ordered URI > action > mime
+		+ declare: 		<deepLink app:uri="http://www.example.com/users/{id}" app:action="" app:mimeType="" />
+		+ manifest:		add tag <nav-graph android:value="@navigation/nav_graph" /> to activity that handle deepLink	
+			-> When building project, the Navigation component replaces the <nav-graph> element with generated <intent-filter> elements to match all of the deep links in the navigation graph.
+		+ state of backstack: implicit Intent launched
+			- with  Intent.FLAG_ACTIVITY_NEW_TASK:		the task back stack is cleared and replaced with the deep link destination, include the start destination of nested-graph 	
+				--> Back button: navigate back up the navigation stack just as though they entered your app from its entry point
+			- without  Intent.FLAG_ACTIVITY_NEW_TASK:	remain on the task stack of the previous app where the implicit deep link was triggered 									
+				--> Back button: back to previous app 
+				--> Up button: starts your app's task on the hierarchical parent destination within your navigation graph.
+		
+		+ deepLink<Route> { basePath = "" 	action = "" 	mimeType="" }
+	+ handle deepLinks: with launchMode
+		- standard (default): 	handleDeepLink() --> any explicit or implicit deep links within the Intent
+		- singleTop:			handleDeepLink() <-- onNewIntent()
+		
+		
+6. Type safety
+	- @Serializable object Route	/ 	@Serializable data class Route(params: String)
+
+
+7. Encapsulate navigation: extend NavGraphBuilder, NavController
+	- SubNavigation.kt:		
+		+ destination:		
+			- fun NavGraphBuilder.contactsDestination()  		{ composable<Contacts> { ContactsScreen( /* ... */ ) } }
+			- fun NavGraphBuilder.contactDetailsDestination() 	{ composable<ContactDetails> { navBackStackEntry -> ContactDetailsScreen(contact = navBackStackEntry.toRoute<Contacts>()) } }
+		+ navigate:			
+			- fun NavController.navigateToContactDetails(id: String) { navigate(route = ContactDetails(id = id) }
+			
+	- AppScreen.kt:	fun MyApp() {
+					  ...
+					  NavHost(navController, startDestination = Contacts) {
+						contactsDestination(onNavigateToContactDetails = { contactId -> navController.navigateToContactDetails(id = contactId) }) 
+						contactDetailsDestination()
+						...
+					  }
+					}
+	- Using internal: to keep screens and route types private
+		
+
+8. Global actions:
+	- Safe Args:
+		+ XML: <fragment> 	<action android:id="@+id/action_fragmentA_to_fragmentB" app:destination="@id/fragmentB" /> 		</fragment>
+		+ Code: navController.navigate(R.id.action_fragmentA_to_fragmentB)
+		
+		+ Global actions:
+			
+		
+	- Animations:
+		+ 
+
+
+9. Using NavGraph
+	- 9.1. Navigate:
+		+ Composable: 					navController.navigate(route = FriendsList)
+		+ using ID:						view.findNavController().navigate(R.id.viewTransactionsAction)
+		+ using NavDeepLinkRequest: 	val request = NavDeepLinkRequest.Builder.fromUri("android-app://androidx.navigation.app/profile".toUri()).build()	-->		findNavController().navigate(request)
+	
+	- 9.2. Navigate with options: NavOptions
+		+ XML:
+		+ Code:	findNavController().navigate(
+					R.id.action_fragmentOne_to_fragmentTwo,  // or deepLinkUri
+					null, 
+					navOptions { // Use the Kotlin DSL for building NavOptions
+						anim {
+							enter = android.R.animator.fade_in
+							exit = android.R.animator.fade_out
+							popEnter = / popExit = / popUpTo / popUpToInclusive
+						}
+					}
+				)
+		+ 
+	
+	- 9.3. Safe-args:
+		+ gradle:	android.useAndroidX=true
+			- buildscript -> dependencies: classpath("androidx.navigation:navigation-safe-args-gradle-plugin:$nav_version")
+			- plugins { id("androidx.navigation.safeargs") id("androidx.navigation.safeargs.kotlin") }
+			
+		+ Gen class: SpecifyAmountFragment -> SpecifyAmountFragmentDirections
+		+ Using:
+			- override fun onClick(v: View) {
+				val amount: Float = ...
+				val action = SpecifyAmountFragmentDirections.actionSpecifyAmountFragmentToConfirmationFragment(amount)
+				v.findNavController().navigate(action)
+			}
+			
+	- 9.4. Pass data between destinations:
+		+ way 1: using ViewModel for large data
+		+ way 2: using <argument>
+			- <action android:id="@+id/startMyFragment"
+				app:destination="@+id/myFragment">
+				<argument
+					android:name="myArg"
+					app:argType="integer"				// argType: primitive data, Parcelable, Serializable, Enum, resources (
+					android:defaultValue="1" />			// @null
+			</action>
+		+ way 3: using Safe-args (only using gradle)
+			- Send: override fun onClick(v: View) {
+					   val amountTv: EditText = view!!.findViewById(R.id.editTextAmount)
+					   val amount = amountTv.text.toString().toInt()
+					   val action = SpecifyAmountFragmentDirections.confirmationAction(amount)
+					   v.findNavController().navigate(action)
+					}
+			+ Recv:	val args: ConfirmationFragmentArgs by navArgs()  						// = getArguments() 
+					override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+						val tv: TextView = view.findViewById(R.id.textViewAmount)
+						val amount = args.amount
+						tv.text = amount.toString()
+					}
+					
+			+ using Safe-args global action:
+				
+		+ way 4: using Bundle
+			- Send: view.findNavController().navigate(R.id.confirmationAction, bundle)			// val bundle = bundleOf("amount" to amount)
+			- Recv:	arguments?.getString("amount")												// = getArguments() 
+		
+		+ way 5: Pass data to the start destination
+			- Send using NavHost: 			NavHostFragment.create(R.navigation.graph, args = bundle)
+			- Send using NavController:		navController.setGraph(R.navigation.graph, args = bundle)	/	navController.setGraph(navGraph, args)  (XML can not using attribute app:nav-graph  -> call .setGraph() -> call setGraph() 2 times)
+			- Recv: 						Fragment.getArguments()
+		
+		+ Note about ProGuard:  shrinking code = true
+			- using @Keep / -keepnames  for Parcelable, Serializable, Enum: to prevent being obfuscated as part of the minification process.
+			- @Keep class ParcelableArg : Parcelable { ... }	/	-keepnames class com.path.to.your.ParcelableArg (proguard-rules.pro)
+		
+	- 9.5. Animate transitions between destinations:
+		+ NavOptions: 			enter / exit / popEnter = / popExit = / popUpTo / popUpToInclusive
+		+ Navigator.Extras: 	FragmentNavigator.Extras /	ActivityNavigator.Extras 
+		
+		+ Fragment:  	FragmentNavigator.Extras											<fragment> <action android:id 	app:destination		app:enterAnim/exitAnim/popEnterAnim/popExitAnim/popUpTo/popUpToInclusive /> </fragment>
+			- val extras = FragmentNavigatorExtras(view1 to "hero_image")
+				view.findNavController().navigate(
+					R.id.confirmationAction,
+					null, // Bundle of args
+					null, // NavOptions
+					extras)
+			
+			- Animation & Animator
+			
+		+ Activity:		ActivityNavigator.Extras, ActivityOptionsCompat/ActivityOptions
+			- val options = ActivityOptionsCompat.makeSceneTransitionAnimation(activity, Pair.create(view1, "hero_image"))
+				val extras = ActivityNavigatorExtras(options)
+				view.findNavController().navigate(
+					R.id.details,
+					null, // Bundle of args
+					null, // NavOptions
+					extras)
+			
+			- Apply pop animations to activity transitions: finish() -> ActivityNavigator.applyPopAnimationsToPendingTransition(this)
+			
+			- startActivity(intent, ActivityOptions.makeSceneTransitionAnimation(this).toBundle())
+			- Activity.finishAfterTransition()
+		
+	- 9.6. Conditional navigate:
+		+ 
+		
+		
+// Animation & Animator: 		https://developer.android.com/guide/topics/resources/animation-resource?hl=vi
+	- Animation types: rotate, stretch, fade, slide, move, scale
+		+ fade: 	<alpha
+		+ slide:	<translate
+	
+	- Transition types: enter & exit
+		+ fade:			
+		+ slide:		
+		+ explode:		
+		
+	- Effects:
+		+ enter:
+		+ exit:
+		+ shared element transition:
+	
+	- Define xml: 
+		+ Animation:		res/anim 			-> res/anim/fade_out.xml		res/anim/slide_in.xml
+		+ Transitions:		res/transition		-> res/transition/fade.xml		res/transition/slide_right.xml
+	
+	- Using:
+		+  Fragment Animation: FragmentTransaction.setCustomAnimations(							--> supportFragmentManager.commit {
+											R.anim.slide_in, // enter							setCustomAnimations(enter, exit, popEnter, popExit)
+											R.anim.fade_out, // exit							replace()
+											R.anim.fade_in, // popEnter							addToBackStack(null)
+											R.anim.slide_out // popExit)					 }
+
+
+		+  Fragment Transition: TransitionInflater
+				- class FragmentA : Fragment() {
+					override fun onCreate(savedInstanceState: Bundle?) {
+						super.onCreate(savedInstanceState)
+						val inflater = TransitionInflater.from(requireContext())
+						enterTransition = inflater.inflateTransition(R.transition.slide_right)			-->	setEnterTransition()
+						exitTransition = inflater.inflateTransition(R.transition.fade)					-->	setExitTransition()
+					}
+				}
+				
+				- ViewCompat.setTransitionName(view, tag)		~ android:transitionName				--> supportFragmentManager.commit { addSharedElement(itemImageView, “hero_image”) }
+				
+		
+		+ 
+			
+
+
+
+		
+		

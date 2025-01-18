@@ -1,0 +1,56 @@
+// https://developer.android.com/develop/ui/views/animations/transitions/start-activity#start-with-element
+
+1. App Layout
+	- Responsive layout
+	- Dynamic list
+	- Activity embeding
+	- Window size classes
+	- Support Multi-window
+	- improve layout performance
+	- custom view
+	- window insets & cutouts
+	- web-based content
+
+2. Apply theme
+	- Dynamic color
+	- Material Design
+	- Implement dark theme
+	- shadows & clip
+	
+3. Add components: core components, app bar, settings, Android search
+
+4. Text & Emoji
+	- download font
+	- add emoji
+	- autosize text view
+	
+5. Display graphics & video
+	- static images
+	- media playback controls
+	- video using PiP (picture-in-picture)
+	
+	
+6. Animations & Transitions
+	- Motion Layout
+	- Activity vs animation
+	- fragments slide with Viewpager
+
+7. Touch & Input
+	- spelling & checker
+	- ...
+	
+8. App Notification
+	- permission
+	- expandable notification
+	- notification chanel / group
+	- conversations
+	- pop-up messages
+
+9. App launch
+	- adaptive launcher icon
+	- splash screen
+	- app shortcuts
+	
+10. add app content to home screen or launcher
+
+11. Backward-compatible UIs

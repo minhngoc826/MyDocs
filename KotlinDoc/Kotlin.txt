@@ -1,0 +1,1060 @@
+1. Basic
+
+1.0 Keywords
+
+	- Hard Keywords
+		as		class		break		continue		do			else
+		for		fun			false		if				in			interface
+		super	return		object		package			null		is
+		try		throw		true		this			typeof		typealias
+		when	while		val			var
+
+	- Soft Keywords
+		+ By, Catch, Get, Finally, Field
+
+
+1.1. Data: not contains primity Data, all variable are Object data, kế thừa từ lớp Any -> can using generic: call function, property, assign to null
+	- Integers: 	Byte, Short, Int, Long  ------------ Byte-8, Short-16, Int-32, Long-64, Float-32, Double-64
+	- Unsigned integers:	UByte, UShort, UInt, ULong
+	- Floating-point numbers: Float, Double
+	- Bool: 		Boolean
+	- Character: 	Char	''			// ko đc xem là kiểu số như Java nữa, vì nó là object
+	- Text:			String	""
+	- Unit:			kiểu DL trả về mặc định cho tất cả các hàm của kotlin
+	
+	
+	- Type inference: tự suy ra kiểu biến
+	- constant literal:
+		val int = 123
+		val long = 123456L
+		val double = 123.45
+		val float = 123.45F
+		val hexa = 0xAB
+		val binary = 0b0001
+		
+	- from kotlin 1.1: using '_' for long number
+		val million = 1_000_000
+		val billion = 1_000_000_000L
+		
+	- Explicity conversion (Chuyển đổi kiểu tường minh):
+		+ toInt(), toFloat(), toChar(), ...
+	
+	- String: immutable, arrayOf characters -> str[idx] = char
+		+ String Literals: 	"one_line", """multi_line"""
+		+ String template:	"xxx ${string_var}"
+
+
+1.2. Type Casting
+	- num.toLong();  // toInt(), toFloat(), toChar()
+	- chú ý kết quả sẽ bị cắt ngắn (bị sai) nếu chuyển đổi sang kiểu DL nhỏ hơn nếu value ko nằm trong phạm vi của KDL mới)
+	- 'as' / 'as?': 
+		+ val t: String = y as String: throw ClassCastException if y = null -> to avoid Exception: val t: String? = y as String?
+		+ Safe cast: val s4: String? = s5 as? String
+	- Smart casting: Trong một số trường hợp, chúng ta không phải cast một cách tường minh vì compiler sẽ track việc check kiểu bằng is và sẽ tự động cast nếu cần:
+
+
+1.3. Toán tử
+	- 1 ngôi: 	+, -  	= 	.unaryPlus()/.unaryMinus()
+	- số học:	+, -, x, :, %		=	.plus() / .minus() / .times() / .div() / .rem()
+	- So sánh: 	
+		+ ==, !=  		~ 	.equals();	
+		+ >, <, >=, <= 	~	.compareTo()
+	- Logic:	&&, ||	~ 	.and(), .or()
+	- Tăng, giảm: ++, -- ~ 	.inc(), .dec()
+	- Basic:	Same Java
+	- Ranges:	x..y = [x, ..., y]
+	- Bitwise:
+		+ not: 	.inv()  // Inversion
+		+ and: 	.and()
+		+ or:	.or()
+		+ xor:	.xor()
+		
+	- '==' và '===': 	'!==' vs '!='
+		+ '==': 	a == b khi a, b khác null và có giá trị bằng nhau. 	// a == b <-> a?equals(b) ?: (b===null)
+		+ '===':	a === b khi a, b cùng trỏ đến cùng 1 object
+			- bình thường, number được lưu trữ một cách vật lý như kiểu dữ liệu nguyên thủy của JVM trừ khi chúng ta cần biến đó có thể gán được bằng null (VD: Int?) hoặc có thể sử dụng với generic. 
+				Trong trường hợp đó, number sẽ được boxing - tức là tự wrap kiểu nguyên thủy đó để nó trở thành kiểu Object.
+				Note: khi boxing, định danh của number không nhất thiết được giữ lại
+			- Tuy nhiên, với các giá trị từ 0 -> 127 (2^7 - 1), các đối tượng này sẽ được lưu trong cùng một vùng nhớ. Với các giá trị lớn hơn mốc 127 này, vì boxing, các định danh sẽ không được giữ lại
+		+ a == null <-> a === null
+	
+	- Toán tử elvis: ?:
+		+ val l = b?.length ?: -1 		// l = b.length if b != null else -1
+		
+	- Toán tử !! (null check)
+		+ val l = b!!.length		// Với !!, nếu b không null, l = b.length. Nếu b null, NPE sẽ được throw
+
+	
+1.4. Define Data
+	- syntax:		var/val name: <dataType> = value;
+	- var: Mutable = read + write
+	- val: Immutable = only read, can not re-assign
+	- Khai báo rồi gán sau: bắt buộc khai báo kiểu dữ liệu của biến:
+		+ var myName: String
+		+ myName = "Ngoc"
+
+	- Nullable: ?		var str: String? = readLine()
+
+	- String:
+		+ """ multi lines string """
+		+ .length, .charAt(), .subSquence(), .contains()
+		+ .equals(), compareTo()
+
+	- Array:
+		+ hỗn hợp: var arr = arrayOf(10, "BeginnersBook", 10.99, 'A');
+		+ var arr2 = arrayOf<String>("ab", "bc", "cd"); intArrayOf(); var arr3: IntArray = IntArray(n)
+		+ arrays.size, array[idx], array.get()/set(), array.contains(), .first(), .last(), .indexOf(), array.filter{}
+		+ Array là 1 đại lượng bất biến, không thể gán 1 Array<String> cho 1 Array<Any>.
+		+ để giảm bớt chi phí boxing, có các loại arrays sau (nhưng ko extend từ Array): ByteArray, ShortArray, IntArray
+
+	- Ranges:
+		+ for (num in 1..10)
+		+ check item: num in ranges
+		+ 1..10 = 1.rangeTo(10); 10..1 = 10.downTo(1), .reverse()
+		+ 1..10.step(3) = 1, 4, 7, 10
+
+	- Collections: Lists, Sets, Maps
+		+ Mutable Collections: can change size, item 			~	MutableList<Int> = mutableListOf()
+		+ Immutable Collections: can not change size, item		~	List<Int> = listOf() - read only
+		+ assign Immutable to the Mutable: cast Mutable to Immutable
+		
+		+ Lists: Ordered collections of items
+			- create: 	listOf() / mutableListOf()
+			- items: 	list[idx] / .first() / .last() / .count() / .add() / .remove()
+			- for: 		for item in list
+			
+		+ Sets: Unique unordered collections of items
+			- create:	setOf() / mutableSetOf()
+			- items: 	.count() / .add() / .remove()
+			- for:		in -> for item in set
+		
+		+ Maps: Sets of key-value pairs where keys are unique and map to only one value
+			- create:	mapOf() / mutableMapOf()			// mapOf("apple" to 100, "kiwi" to 190, "orange" to 120)
+			- items: 	value = map[key] / .count() / .put() / .remove() / .containsKey() / list = .keys / .values / 
+			- for:		in -> for item in set
+			
+		
+	- Matrix: 
+		+ var M: Array<IntArray> = Array(10,{IntArray(5)})
+		
+	- Type Inference
+		+ fun sumOf(a: Int, b: Int) = a + b
+		+ val a = 10     // kiểu Int
+			val b = 10L    // kiểu Long
+			val c = 10.1   // kiểu Double
+			val d = 10.1f  // kiểu Float
+			val e = true   // kiểu Boolean
+			val f = '$'    // kiểu Char
+			val g = "Minh" // kiểu String
+			
+	- Type check: if (obj is String) / if (obj !is String)
+	
+	- Iterator:
+		+ Có một member hoặc extension function tên là iterator(), kiểu trả về là Iterator
+			- Có một member hoặc extension function next()
+			- Có một member hoặc extension function hasNext trả về kiểu Boolean Tất cả 3 function này đều cần được đánh dấu là operator
+		+ Ex:
+			class DateRange(start: Int, val end: Int) {
+				var current = start
+
+				operator fun iterator(): Iterator<Int> {
+				  return object : Iterator<Int> {
+					  override fun next(): Int {
+						  val result = current
+						  current++
+						  return result
+					  }
+
+					  override fun hasNext(): Boolean {
+						  return current <= end
+					  }
+					}
+				}
+			}
+	
+1.5. Control flow
+	- if:						if() {} else {}
+		+ Trong Kotlin, if là một biểu thức, Bởi vậy, Kotlin không còn toán tử 3 yếu tố như Java: int a = result? 1 :0;
+		+ Nếu sau if là khối lệnh, giá trị ở cuối khối lệnh là giá trị trả về. Khi gán giá trị = if, nhánh else bắt buộc phải có
+		+ Conditional expressions: 	a = if (c > 5) b else d
+		+ gán: var x = if (y) { a } else { b }
+
+	- when (type) {		// điều kiện của when có thể là constant, function, range, kiểu DL
+		  type1  	-> value1	//~ switch case, return result, ~ if else, val result = when() {}
+		  ...................
+		  type9, type10 -> value9_10
+		  ...................
+		  else 		-> value
+	  }
+		+ gán: var x = when (type) {}
+
+	- for: 	+ for (num in a..b)				for (i in a until b)= [a,., b)		for (i in a..b step x)						for (i in a downTo b step x)	
+			+ for (str in array) 			for (i in array.indices) 			for ((idx, value) in array.withIndex())		for (item: Int in ints)
+
+	- while, do - while: same java
+
+	- continue, break, return: same java, áp dụng cho vòng lặp / funtion gần nhất
+		+ continue/break label: labelName@ for/forEach -> continue@labelName / break@labelName
+		+ return label:
+
+	- Comment:		// one line , /* multi lines */
+	- Comment KDoc Syntax: by Dokka tool ( https://github.com/Kotlin/dokka/blob/master/README.md)
+	+ @author : tác giả
+	+ @sample: Ví dụ
+	+ @param : parameter trong hàm
+	+ @return : kết quả trả về của hàm	+ 
+
+
+1.6. Read Input / file
+	- readLine(): 		return String or null -> cast to other dataType
+	- readLine(): 		return String or null -> cast to other dataType
+	- Scanner:			Scanner(System.'in').nextInt(); // .nextFloat(), ...
+	- print(), println()
+
+
+1.7. Exception
+	+ Tất cả các class exception trong Kotlin đều thừa kế từ lớp Throwable. Mọi exception đều có một message, stack trace và một optional cause	
+		- try {} catch(e: Exception) finally {}
+		- throw Exception("ex")
+	
+	+ try = expression: return value in block try{} or catch{}, not in finally{}
+		- val a: Int? = try { parseInt(input) } catch (e: NumberFormatException) { null }
+	
+	+ Nothing Type:
+		- throw là một biểu thức trong Kotlin, bởi vậy chúng ta có thể sử dụng throw như một phần của toán tử elvis:
+			+ val s = person.name ?: throw IllegalArgumentException("Name required")
+		
+		- Kiểu dữ liệu của biểu thức throw là một kiểu đặc biệt: Nothing. 
+			Kiểu dữ liệu này không có giá trị và thường được dùng để đánh dấu các vị trí trong code mà code không bao giờ có thể chạy tới được. 
+			Với code của bạn, bạn có thể sử dụng Nothing để xác định các function mà không bao giờ trả về giá trị gì:
+			+ fun fail(message: String): Nothing { throw IllegalArgumentException(message) }
+		
+		- Khi bạn gọi function này, compiler sẽ biết rằng việc thực thi không thể tiếp tục sau khi function này được gọi:
+			val s = person.name ?: fail("Name required")
+			println("hello") // code không thể chạy tới dòng này
+		
+
+1.8. Funtcion
+	- syntax: fun methodName(var1: <dataType>, var2: <dataType>): <return_dataType> { // method body }
+	- Single-Expression functions: fun sumOf(a: Int, b: Int) = a + b
+	- Inline function
+	- Funtion types:
+		+ Standard Library Funtions
+		+ User defined Functions
+
+	- Function References: ::funtionName -> có thể dùng với các method overload
+	
+	- Function Scope: Modifiers
+		+ Member function: 	Là các function được khai báo ở trong class, object hoặc interface -> call: instance.funtion()
+		
+		+ Local function:	nested function -> không sử dụng đc ngoài funtion cha, chỉ sử dụng đc các param và biến khai báo trước nó trong function cha, khai báo sau thì không thể sử dụng.
+			fun printArea(width: Int, height: Int): Unit {		// local function: calculateArea
+				fun calculateArea(width: Int, height: Int): Int = width * height
+				val area = calculateArea(width, height)
+				println("The area is $area")
+			}
+			
+		+ Top-level function: Có thể hiểu rằng đây là những function được khai báo ngoài tất cả như class, object, interface, method và được định nghĩa trong file Kotlin (.kt). 
+			Các method được truy cập thông qua tên của file vs kí hiệu "kt" (đối với Java), trong Kotlin các function này được gọi trực tiếp qua tên của function. 
+			Việc này rất hữu ích trong việc định nghĩa các các function hepler, util mà trong Java hay làm thông qua các method static.
+			
+
+	- Tham số mặc định: fun demo(num: Int = 10, ch: Char = 'A') -> demo();		demo(num=20);		demo(ch='Z')
+		+ Điều này giúp không phải viết quá nhiều overload function.
+		+ Khi kế thừa, class cha có param mặc định thì class con khi override method không đc định nghĩa lại giá trị mặc định đó
+		+ Khi gọi hàm, nếu có param nào miss thì các param khác pass vào theo kiểu: param=value
+		
+		+ Khi sử dụng function của Kotlin trong Java, các param được khai báo giá trị mặc định sẽ không có tác dụng. Vì Java không thể bỏ qua các param có giá trị mặc định.
+		+ Khi sử dụng function của Java trong Kotlin, không thể sử dụng được chức năng đặt tên cho đối truyền vào.
+
+
+	- Đệ quy đuôi: tailrec
+		+ Việc tính toán được thực hiện ngay từ đầu trước khi gọi đệ quy. Lệnh gọi hàm đệ quy xảy ra ở cuối hàm. 
+			Điều đó có nghĩa là việc tính toán được thực hiện trước và sau đó được chuyển sang lệnh gọi đệ quy tiếp theo.
+
+	
+	- Lambda function: 
+		
+		+ Assign to variable: 				val sum = {num1: Int, num2: Int -> num1 + num2}
+		
+		+ Pass to funtion as parameter: 	numbers.filter { x -> x > 0 } 						// or map(x -> x > 0)
+		
+		+ Return lambda from function:		
+			- Function types: (Parameter_1, Parameter_2, ...) -> Return_Type: 
+				+ Ex: val upperCaseString: (String) -> String = { string -> string.uppercase() }  -> call:  upperCaseString("hello")
+		
+		+ invoke on its own: println( { string: String -> string.uppercase() }("hello") )
+		
+		+ Trailing lambdas: param cuối là 1 lambda -> tách riêng ra đc
+			- println(listOf(1, 2, 3).fold(0, { x, item -> x + item })) // 6
+			- println(listOf(1, 2, 3).fold(0) { x, item -> x + item })  // 6
+			
+	- Unit-returning functions: same Void in Java
+		+ 
+		
+	- Extension functions:
+		+ Giống với Swift, Kotlin cho phép ta mở rộng class mà không phải kế thừa từ class khác.
+		+ fun <T> MutableList<T>.swap(index1: Int, index2: Int) { } --> using: list.swap(0, 2)
+	
+	- Mutiple return values:
+		+ Using data class with primary constructor:
+		+ Destructuring Declarations:
+			data class Person(var name: String, var age: Int)		==== complie:			data class Person(var name: String, var age: Int)
+			val (name, age) = Person("Hado", 22)											val person = Person("Hado", 22)
+																							val name = person.component1()
+																							val age = person.component2()
+																							
+			- Lưu ý chỉ có các param trong primary constructor mới được tự động tạo ra function component. 
+			- Nếu chúng ta khai báo thêm biến trong class và muốn sử dụng Destructure thì cần khởi tạo thêm các function component tương ứng với param đó:
+				+ data class Person(var name: String, var age: Int) {
+					var province: String = "Ha Noi"
+
+					operator fun component3(): String {
+						return province
+					}
+				}
+		
+			+ val (_, age, province) = Person("Hado", 22) // ko lay gia tri name
+	
+	
+	- Generic functions:
+		+ fun <T> singletonList(item: T): List<T> {}
+		+ fun <T> T.basicToString() : String {}				// extension function
+		+ fun <T : Comparable<T>> sort(list: List<T>) {}	// class T kế thừa Comparable
+		
+		+ ussing:	val l = singletonList<Int>(1)
+		
+		
+	- Infix notation: Function có thể sử dụng infix notation (trung tố) khi
+		+ Function là member của một class hoặc là extension của class
+		+ Function chỉ có một param duy nhất
+		+ Function được mark bằng infix ở đầu function
+		
+		+ class Fly(var currentPlace: String) {
+			infix fun flyTo(nextPlace: String) {
+				println("The plane fly from $currentPlace to $nextPlace")
+			}
+		}
+
+		val plane1 = Fly("Ha Noi")
+		plane1 flyTo "Ho Chi Minh" //print: The plane fly from Ha Noi to Ho Chi Minh
+		plane1.flyTo("Ho Chi Minh") //print: The plane fly from Ha Noi to Ho Chi Minh
+			
+	- Function với parameter không xác định: 	fun add(vararg array: Int) : Int {}  --> add(1, 2, 3)
+		+ Ta sử dụng từ khóa vararg. Và cũng tương tự như Java, biến array được coi là một mảng.
+			Lưu ý: Chỉ có một param được đánh dấu là vararg. Nếu param không phải là param cuối cùng, khi gọi hàm, ta phải chỉ định rõ các param sau đó.
+		
+	///////////////////////////////////////////////////////////////////////////////
+	// Viblo
+	- High-Order Function: function has parameter that is another function or return another function
+		+ fun doSomethingWithNumber(number: Int, receiver: (String?) -> Unit) {//do somthing} 		// receiver = fun(string: String?) {} -> call: doSomethingWithNumber(1000, ::processWithResult)
+			- "::": toán tử Function References, có thể sử dụng với các overload function
+		
+		+ loại function này bộc lộ một số hạn chế lúc runtime: mỗi function là một object và nó giữ closure của nó.
+			Bởi vậy, việc cấp phát bộ nhớ (cho cả function object, class) và các lời gọi ảo cho ra một chi phí lúc runtime. 
+			Tức là khi gọi các function này, một object sẽ được tạo ra để lưu trữ function và thêm vài function cần thiết cho class nữa. 
+			Việc này làm cho số function của project sẽ tăng lên nhanh chóng.
+
+		+ Function Anonymous: doSomethingWithNumber(1000, fun (result: String?) {} )
+
+	- Lambda return:
+		
+		+ listOf(1, 2, 3).filter {
+			val shouldFilter = it > 0
+			shouldFilter						// way 1: return only for filter
+			//return@filter shouldFilter		// way 2: return only for filter
+			//return shouldFilter				// return for parent funtion
+		}
+
+	- Closures:
+		+ Lambda, anonymous function, local function và object expression đều có thể truy cập closure của nó (nôm na như là vùng bên ngoài khai báo nó). 
+			Nó có thể truy cập các function, biến và param được khởi tạo ở bên ngoài, (không giống Java, ta chỉ sử dụng được các biến và param ở vùng bên ngoài nếu như chúng được khai báo là final)
+		+ 
+
+
+	- Function Literals: A function literal is just an expression that defines an unnamed function.
+		+ val m = { (x : String) -> println("$x") }
+			val n : (String) -> Unit = { x -> println("$x") }
+			val o : (String) -> Unit = { (x : String) -> println("$x") }
+			
+	- Function Literals with Receiver: val sum = fun Int.(other: Int): Int = this + other
+		+ fun Int.sum(other: Int): Int {
+			return this + other
+		 }
+		 
+		+ Receiver object: 	nói đến đối tượng thực hiện extension --> fun Int.sum(other: Int): Int { return this + other }
+		
+	- Inline function:		code của function sẽ được thêm ngay ở nơi gọi function, tránh khởi tạo một instance để lưu function (solution for high-order function)
+		+ inline fun close(work: String, process: (String) -> Unit) {}		// process is func(str: String): Unit {}
+		+ Từ khóa inline sẽ có ảnh hưởng đến cả các lambda bên trong được truyền cho function. Nghĩa là tất cả các function bây giờ sẽ được inline ở nơi gọi.
+		+ Việc sử dụng inline function cũng có một số hạn chế. Đó là:
+			- Một inline function không thể tự gọi lại chính nó một cách trực tiếp hoặc gọi gián tiếp thông qua một inline function khác.
+			- Một public inline function được khai báo ở trong một class chỉ có thể truy cập vào các public function và public field của class đó
+			- Số lượng dòng code sẽ tăng lên. Việc inline một function dài, phức tạp nhiều lần sẽ được compiler sinh ra code tương ứng.
+			
+		+ noinline:
+			- inline có tác dụng với các lambda đc truyền vào function, lambda lúc đó cũng là inline func, để hủy bỏ dùng noinline trước lambda.
+		
+		+ Non-local return:
+			- return trong inline lambda gọi là non-local return, sau return thoát ra function ngoài (break vs continue ko đc hỗ trợ trong lambda)
+			- crossinline func: () -> Unit: 
+			
+		+ Reified type parameter: Xác định cụ thể kiểu param
+			- reified: param đã có thể truy cập bên trong function và không cần sử dụng reflection nữa, các toán tử như is, !is hay as cũng đã hoạt động bình thường
+			- Lưu ý: function không phải là inline function không thể sử dụng reified type parameter.
+			
+			- inline fun <reified T> membersOf() = T::class.members 		--> 	println(membersOf<StringBuilder>().joinToString("\n"))
+			- inline fun <reified T> TreeNode.findParentOfType(): T? {}		-->		treeNode.findParentOfType<MyTreeNode>()
+
+		+ Inline property:
+			- Từ khóa inline có thể được sử dụng với các hàm getter, setter của các property mà không có backing field: inline get() = Foo()		inline set(v) { ... }			inline var bar: Bar
+			- Ở vị trí gọi function, các hàm getter, setter này cũng sẽ được coi như các hàm inline function bình thường.
+		
+	///////////////////////////////////////////////////////////////////////////////
+
+
+1.9. OOP
+	- Object = attribute + method (thuộc tính + hành vi)
+
+	- Một số đặc điểm của OOP:
+		+ Tập trung vào dữ liệu thay cho các hàm.
+		+ Chương trình được chia thành các đối tượng độc lập.
+		+ Cấu trúc dữ liệu được thiết kế sao cho đặc tả được các đối tượng.
+		+ Dữ liệu được che giấu, bao bọc.
+		+ Các đối tượng trao đổi với nhau thông qua các hàm.
+		+ Chương trình được thiết kế theo hướng tiếp cận từ dưới lên (bottom-up): Phương
+			pháp xây dựng chương trình bottom-up là phương pháp thường dùng để xây dựng
+			phần mềm lớn, phức tạp. Ý tưởng của phương pháp này là xuất phát từ nhiều thành
+			phần nhỏ đã có sẵn, ta khéo kết hợp chúng lại để tạo ra thành phần chức năng lớn
+			hơn, ta tiếp tục kết hợp các thành phần xây dựng được để tạo ra thành phần lớn hơn
+			nữa… cho đến khi xây dựng được chương trình giải quyết được bài toán mong
+			muốn.
+			
+	- Một số ưu điểm nổi bật của OOP:
+		+ Không có nguy cơ dữ liệu bị thay đổi tự do trong chương trình.
+		+ Khi thay đổi cấu trúc dữ liệu của một đối tượng, không cần thay đổi mã nguồn của các đối tượng khác.
+		+ Có thể sử dụng lại mã nguồn, tiết kiệm tài nguyên.
+		+ Phù hợp với các dự án phần mềm lớn, phức tạp.
+		+ Khái niệm đối tượng (object) trong lập trình hướng đối tượng giống như một đối tượng cụ thể trong thế giới thực.
+		
+	- Mỗi đối tượng có các thuộc tính và các hành vi riêng:
+		+ Thuộc tính (attribute) mô tả đặc điểm của đối tượng.
+		+ Hành vi là phương thức hoạt động của đối tượng, gọi tắt là phương thức (method).
+
+	- Class: 
+		+ Các đối tượng có các đặc điểm (thuộc tính và phương thức) giống nhau được gom nhóm
+			thành một lớp để phân biệt với các đối tượng khác và dễ quản lý.
+		+ Một lớp (class) là sự phân loại của các đối tượng hay là kiểu (type) của đối tượng.
+		+ Như vậy Lớp(Class) là một khái niệm trừu tượng, dùng để chỉ một tập hợp các đối
+			tượng có mặt trong hệ thống
+		
+	- Gói (package)
+		+ Một nhóm các lớp (classes) và giao diện (interfaces) được tổ chức thành một đơn vị
+			quản lý theo hình thức không gian tên gọi là package.
+		+ Lợi ích của package là tổ chức sắp xếp lại hệ thống thông tin các lớp trong dự án một
+			cách khoa học, giúp cho việc theo dõi bảo trì dự án được tốt nhất.
+			
+	- 1. Abstraction: Tính trừu tượng
+		+ TH1: Lớp (Class) là một khái niệm trừu tượng, đối tượng là một thể hiện cụ thể của lớp.
+		+ TH2: Từ những đối tượng giống nhau: trừu tượng hóa thành một lớp -> Chỉ đưa ra các thuộc
+			tính và phương thức cần thiết của đối tượng trong lập trình.
+
+	- 2. Encapsolution: Tính đóng gói
+		+ Mỗi lớp được xây dựng để thực hiện một nhóm chức năng đặc trưng của riêng lớp đó.
+		+ Tất cả mọi thao tác truy xuất vào thành phần dữ liệu từ đối tượng này qua đối tượng
+			khác phải được thực hiện bởi các phương thức (method) của chính đối tượng chứa dữ liệu.
+		+ Tính đóng gói cho phép dấu thông tin của đối tượng bằng cách kết hợp thông tin và
+			các phương thức liên quan đến thông tin trong đối tượng.
+		
+	- 3. Inheritance: Tính kế thừa
+		+ Cho phép xây dựng một lớp mới dựa trên các định nghĩa của một lớp đã có.
+		+ Lớp đã có gọi là lớp Cha, lớp mới phát sinh gọi là lớp Con
+		+ Lớp con kế thừa tất cả các thành phần của lớp Cha, có thể mở rộng các thành phần kế thừa và bổ sung thêm các thành phần mới.
+		
+		+ Tổng quát hoá: Những đặc điểm chung mà các lớp đều có ==> là các lớp Cha
+		+ Chuyên biệt hóa: Những đặc điểm riêng chỉ có các lớp con mới có ==> là các lớp Con
+
+	- 4. Overloading: Đa hình
+		+ Là một đối tượng thuộc các lớp khác nhau có thể hiểu cùng một thông điệp theo cách khác nhau.
+			Ví dụ đa hình trong thực tế: Mình có 2 con vật: chó, mèo hai con vật này khi nhận được mệnh lệnh là
+			"hãy kêu" thì chó kêu "gâu gâu",  mèo kêu "meo meo".
+		+ Trong code để thể hiện tính đa hình có 2 cách:
+			- Method Overloading (compile time polymorphism): là cách nạp chồng các method có cùng tên nhưng khác tham số
+			- Method Overriding (run time polymorphism): Đây là một phương pháp được ghi đè lại các method ảo của một lớp cha
+		
+		+ Overloading: Là đặc điểm trong cùng 1 lớp có nhiều phương thức cùng tên nhưng khác nhau về Signature.
+		+ Signature bao gồm: Số lượng các đối số hoặc kiểu dữ liệu các đối số hoặc thứ tự các đối số.
+		+ Kiểu dữ liệu trả về không được tính vào signature
+		+ Lợi ích của Overloading là khả năng tái sử dụng lại phương thức và giúp việc gọi hàm “uyển chuyển”.
+		+ Các Constructor là trường hợp đặc biệt của Overloading Method.
+
+
+1.10. Class
+
+	- Define:
+		+ class MyClass {}		
+		+ Empty class: class Empty
+		+ class ClassName: 
+		+ final / open:	 -> default is final
+		+ public/private class: default is public
+
+	- Constructor:
+		+ default: kolin create 1 public primary constructor with no params
+		+ 1 primary constructor + n secondary constructors
+		+ primary constructor:			not contains any code -> use init{} to create default value for primary constructor
+			- class SinhVien constructor(ma: Int, ten: String){}  // ignore constructor if primary constructor has no visibility modifier or annotations
+			- class SinhVien (ma: Int, ten: String){}
+			- class SinhVien (ma: Int, ten: String){
+				init {
+					println("Mã=$ma ; Tên =$ten")
+				}
+			}
+			- Used: var lanh = SinhVien(113, "Trần Thị Long Lanh") --> not need new Object()
+		+ secondary constructors: if there is a primary constructor, secondary constructor must call to primary constructor directly or nondirectly
+			- constructor() {}
+			- constructor(ma: Int, ten: String) {}
+			- class SinhVien (ma: Int, ten: String){
+				constructor() {}
+				constructor(ma: Int, ten: String) {}
+			}
+
+	- Visibility modifier = Access modifier: public, internal, protected, private, áp dụng cho class, object, interface, constructor, function, property(và function set() của nó) // function get() của property luôn có visibility modifier giống với property
+		+ Nếu không xác định rõ ràng visibility modifier thì mặc định sẽ là public
+		
+		+ Package: Function, property, class, object và interface đều có thể khai báo ở mức "top-level" (được hiểu là nó không ở bên trong bất cứ thành phần nào), như trong package 
+			- private: 		chỉ được sử dụng ở file mà nó khai báo
+			- protected:	không được sử dụng khi khai báo ở mức "top-level"
+			- internal:		chỉ được sử dụng ở các nơi cùng module (cùng package)
+			- public: 		có thể sử dụng nó ở bất kì đâu
+			- default: 		public
+		
+		+ Class / Interface
+			- private:		chỉ được sử dụng trong class đó (không thể truy cập qua instance của class đó)
+			- protected:	giống với private + có thể sử dụng ở trong các subclass (các class kế thừa nó).
+			- internal: 	được truy cập bởi các instance của class khác khai báo nó (các instance và nơi khai báo class thuộc cùng module)
+			- public: 		được sử dụng ở bất kì đâu thông qua instance khai báo nó.
+			- default:		public
+		
+		+ Constructor:		class C private constructor(a: Int) { ... }
+			- default: 		public
+			
+		+ Module:
+			- internal:
+		
+		+ Local:
+			- Local variables, functions và class không có visibility modifier
+		
+
+	- Getter / Setter: define for each attribute
+		+ private var ma:Int=0
+		+ public var Ma:Int 
+			get() { return ma }
+			set(value) { ma = value }
+		+ Used: 
+			- in package: 	object.ma = 10;
+			- out package: 	object.Ma = 100		/ 	print(object.Ma)
+			
+		+ Từ Kotlin 1.1, bạn có thể bỏ qua kiểu dữ liệu của property nếu nó có thể được suy ra từ kiểu trả về của hàm getter:
+			- val isEmpty get() = this.size == 0  // isEmpty sẽ có kiểu là Boolean
+
+	- Method:
+		+ fun methodName(): <dataType> {}
+		+ override fun methodName(): <dataType> {}
+		+ types:
+			- Service method: like public method
+			- Support method: private method, support Service method
+			
+	- Reference This:
+		+ Instance variable: like attribute of class, all methods of class can use them.
+		+ Local variable: like parameter of method, read only, only method themself can use them
+		+ Nếu tại một dòng lệnh mà đồng thời cùng truy xuất tới instance variable và local variable(cùng tên) thì chương trình sẽ ưu tiên truy suất tới biến local variable
+			-> this dùng để phân biệt 2 loại biến có cùng tên
+			
+	- Overloading:
+		+ Same Java
+		+ Special: vararg = Parameter list
+			- fun printNumbers(vararg numbers: Int) {
+					for (number in numbers) {
+						println(number)
+					}
+			}
+
+	- Data Class: 	provider method: equals() / hashCode(), toString(), componentN(), copy()
+		+ data class User(var UserName: String, var Password: String)  -> var user1 = User(UserName = "obama", Password = "113@114Xa")
+
+	- Nested Class:
+		+ các lớp Nested sẽ không thể truy suất được các biến thành viên trong Outer class
+		+ class Outer {
+				private val bar: Int = 1
+				class Nested {
+					fun foo() = 113
+				}
+			}
+		+ Used: val demo = Outer.Nested().foo()
+		
+	- Inner Classes: các lớp Inner sẽ có thể truy suất được các biến thành viên trong Outer class
+		+ class Outer {
+				private val bar: Int = 1
+				inner class Inner {
+					fun foo() = bar
+				}
+			}
+		+ Used: val demo = Outer().Inner().foo()  -> this@Outer.bar = 5\
+		
+	- Anonymous inner class: using object key =  object expression
+		+ textView?.setOnClickListener(object : View.OnClickListener {}
+		+ Nếu object được khởi tạo là một functional Java interface (một interface chỉ có duy nhất một method), chúng ta có thể sử dụng lambda và khai báo như sau: val listener = View.OnClickListener {}
+		
+	- Enum Classes: Enum cũng là một loại Lớp đặc biệt trong Kotlin (giống như các ngôn ngữ khác C#, java…)
+		+ enum class XepLoai { XuatSac, Gioi, Kha, TrungBinh, Yeu, Kem }
+		+ Used: XepLoai.XuatSac, ...
+		
+	- Inheritance - Kế thừa: 			add open to can be Inheritance
+		+ every class is extended by Any: equals(), hashCode(), toString()
+		+ format: class AName : BName() {}
+		+ Overriding: need open method, final method can't override
+		
+		+ Đa kế thừa:
+			- class C() : A(), B() {
+				// The compiler requires f() to be overridden:
+				override fun f() {
+					super<A>.f() // call to A.f()
+					super<B>.f() // call to B.f()
+				}
+			}
+			
+	- Abstract Classes: 				extend cần override function
+		+ abstract class Base {
+				abstract fun calculate()
+			}
+			
+		+ open fun f(): none-abstract -> override abstract fun f(): abstract
+		
+	- Property và field: 				if not define get/set -> use get/set default method of kotlin, like that below:
+		+ private var num: Int = 0
+			fun get() { return num }
+			fun set(value) { num = number }
+			
+		+ val: (= constant) -> can not define set method
+		+ modifier of getter: same modifier of property, can not change it.
+		+ modifier of setter: <= modifier of property, can change it without implement setter method: private set //
+		+ call property by class.name, it's not directly call to name, it means call to get/set method -> ko call property trong các hàm get/set tự define vì gây ra StackOverflowError
+		+ field chỉ đc sử dụng bên trong các hàm get/set
+		
+		+ Backing field & Backing property:
+			- Backing field: call class.name, sử dụng name variable -> gọi setter / getter default
+			- Backing property: config setter / getter
+		
+	- Compile-time constant: 			const val SUBSYSTEM_DEPRECATED: String = "This subsystem is deprecated"
+		+ const -> (top-level property || member of a object) && primity data (String, Num, Boolean) && only default getter
+		+ object trong Kotlin là một singleton, không phải là đối tượng
+		
+	- Late-initialized property :		lateinit var className: String
+		+ property non-null: must initialize by directly or constructor
+		+ lateinit condition:
+			- only use with var property && only default get/set
+			- Data type: can not primity Data and must non-null
+			- UninitializedPropertyAccessException will raise if access property when it's not initialized
+		
+		+ lateinit: không làm việc với các kiểu dữ liệu nguyên thủy như Int -> using delegates: private var mNumber: Int by Delegates.notNull<Int>()
+		
+	- Overriding property:
+		+ use override: override val x: Int = 10
+		+ only override val property to var property + define setter
+		+ Từ khóa override cũng có thể sử dụng ngay trong primary constructor:
+			
+	
+1.11. Extension Method:
+	+ cho phép ta mở rộng class mà không phải kế thừa từ class khác
+-
+- 
+
+
+1.12. Null safety
+	+ Not null: 	var neverNull: String = "This can't be null"
+	+ Nullable:		var nullable: String? = "You can keep a null here"
+	+ var is not null can't set null: throw a compiler error
+	+ Method with not null param can't accept null param
+	
+	+ Check null: Use safe calls for properties and method
+		- fun lengthString(maybeString: String?): Int? = maybeString?.length
+		- Safe calls can be chained: person.company?.address?.country
+		
+	+ Use Elvis operator: use '?:' to return default value when null value is detected
+		- println(nullString?.length ?: 0)
+		
+	+ null?.apply / let {}
+		
+
+1.13. Modifiers order﻿: If a declaration has multiple modifiers, always put them in the following order:
+
+	public / protected / private / internal
+	expect / actual
+	final / open / abstract / sealed / const
+	external
+	override
+	lateinit
+	tailrec
+	vararg
+	suspend
+	inner
+	enum / annotation / fun // as a modifier in `fun interface`
+	companion
+	inline / value
+	infix
+	operator
+	data
+
+
+1.14. This
+	+ Class: this = instance class
+	+ extension function / function literal with receiver: this biểu thị param của function - tức là giá trị được truyền vào bên trái dấu . 
+		Nếu this không có label chỉ định đối tượng chỉ vào, this tham chiếu tới phạm vi chứa gần nhất. 
+		Để tham chiếu đến một phạm vi khác, label chỉ định sẽ được sử dụng
+	
+	+ Label chỉ định: this@labelName
+	
+
+1.15. Interface
+	+ abstract function:
+	+ function with body:
+	+ property: 
+		- không được khởi tạo cho property trong interface, và interface không có backing fields
+	
+	+ Kế thừa Interface: class Child : MyInterface { override fun bar() {} } // override property: same
+	+ Đa kế thừa: dùng super<A>.function(), super<B>.function()
+
+	
+1.16. Data class:
+	+ data class User(val name: String, val age: Int)
+	+ equals(), hashCode(), toString() dưới dạng User(name=John, age=42)
+	+ componentN(): user.component1()
+	+ copy(): 
+		- cần copy một đối tượng nhưng lại muốn thay đổi một số property và giữ nguyên phần còn lại: val jack = User(name = "Jack", age = 1)  --> val olderJack = jack.copy(age = 2)
+	
+	+ Để đạt được tính nhất quán và các hành vi có ý nghĩa của code được sinh ra, data class phải thỏa mãn những yêu cầu sau:
+		- Primary constructor phải có ít nhất 1 param
+		- Tất cả param của primary constructor phải được khai báo là var hoặc val
+		- Data class không thể là abstract, open, sealed hay inner class.
+		- Data class chỉ có thể implement các interface (Trước phiên bản 1.1)
+	+  Nếu tất cả các param của primary constructor có giá trị mặc định, compiler sẽ tự sinh ra thêm một constructor không có tham số sử dụng các giá trị mặc định đã khai báo ở primary constructor	
+	
+	+ Destructuring Declaration:
+		- val jane = User("Jane", 35) -> val (name, age) = jane 	// Với các hàm componentN() được tự sinh ra
+
+1.17. Kotlin Lambda
+	+ Biểu thức của lambda luôn được bao bởi {}
+	+ Nếu lambda function có bất kì param nào nó phải ở trước toán tử -> (kiểu dữ liệu của param có thể được bỏ qua)
+	+ Body của lambda function phải ở sau toán tử ->
+	
+	+ Implicit name of a single parameter: doSomethingWithNumber(1000) { println("The result is $it") // do something with result } // Có thể hiểu ở đây it là tên đại diện cho parameter duy nhất
+	+ Destructuring trong Lambdas:
+		- map.mapValues { entry -> "${entry.value}!" }
+		- map.mapValues { (key, value) -> "$value!" }
+		
+	+ Lambda return:
+		- ints.filter {
+				val shouldFilter = it > 0
+				shouldFilter == return@filter shouldFilter
+			}
+	+ Closures:
+		- Lambda, anonymous function, local function và object expression đều có thể truy cập closure của nó (nôm na như là vùng bên ngoài khai báo nó). 
+			Nó có thể truy cập các function, biến và param được khởi tạo ở bên ngoài, ko cần final như java
+		- 
+	
+	+ Function Literals:		A function literal is just an expression that defines an unnamed function.
+		- function = biểu thức:
+		
+		- Function Literals với receiver:
+			+ Receiver object: receiver object nói đến đối tượng thực hiện extension, 		fun Person.run() {} -> class Person được coi là receiver object 	// like: fun Int.sum(other: Int): Int { return this + other }
+			+ val sum = fun Int.(other: Int): Int = this + other	--> 
+	
+	+ Inline function: above
+		
+
+1.18. Kotlin Collection
+	+ Kotlin cung cấp cho chúng ta một tập các native interface để làm việc với collection::
+		- Iterable: 			Lớp cha. Bất kỳ class nào kế thừa từ interface này đại diện cho một chuỗi các phần tử mà chúng ta có thể duyệt qua
+		- MutableIterable: 		Iterable hỗ trợ việc xóa các phần tử trong khi đanh duyệt
+		- Collection:			immutable -> size(), empty()
+		- MutableCollection: 	Collection hỗ trợ việc thêm hoặc xóa các phần tử: các hàm add, remove, clear...
+		- List/MutableList:
+		- Set/MutableSet:		một tập các phần tử không có thứ tự và không hỗ trợ lưu các phần tử trùng
+		- Map/MutableMap:		key - value -> val readWriteMap = hashMapOf("foo" to 1, "bar" to 2) 		//// 		val snapshot: Map<String, Int> = HashMap(readWriteMap)
+		
+	+ Methods:
+		- .any, .all, .none: 	return true if any/all/none element meet codition
+		- .count:				return number of element which meet codition
+		- .fold/foldRight:		Tổng của các giá trị bắt đầu từ giá trị khởi tạo và áp dụng việc tính toán ở hàm được đưa vào với các phần tử từ đầu đến cuối collection. list.fold(init_calue, {sum: Int, i: Int -> sum + i})
+		- .reduce/reduceRight:	tương tự fold nhưng không có có giá trị khởi tạo
+		- .forEach:				it		.forEachIndexed	{ idx: Int, value: Any -> .... }
+		- .max/.min:	
+		- .sumBy(condition):	.sumBy{it % 3}
+		- .drop/.dropWhile():	return list bao gồm tất cả các phần tử trừ n phần tử đầu tiên
+		- .dropWhile/.dropWhileLast:	Trả về một list bao gồm tất cả các phần tử trừ các phần tử đầu tiên mà thỏa mãn logic truyền vào /  tuy nhiên sẽ loại các phần tử cuối nếu thỏa mãn logic truyền vào
+		- .filter/.filterNot/.filterNotNull:
+		- .slice:
+		- .take/.takeLast/:		Trả về một list gồm n phần tử đầu tiên
+		
+		- .flatMap{ logic(it) }: 	Trả về một list bao gồm tất cả các phần tử của các logic
+		- .groupBy{ logic(it) }:	Trả về một map bằng cách áp dụng logic truyền vào và phân loại các phần tử trong collection thành các nhóm
+		- .map{ logic(it) }:		Trả về một list là kết quả của logic chuyển đổi được truyền vào áp dụng với tất cả các phần tử của collection ban đầu
+		- .mapIndexed{idx, value -> logic}:	Trả về một list là kết quả của logic chuyển đổi được truyền vào áp dụng với tất cả các phần tử và idx của collection ban đầu
+		- 
+		
+	+ Khởi tạo:
+		- list = listOf(items) / mutableListOf(items); // immutable
+		- map = mapOf(a to b, c to d)
+		
+	+ Generic:
+		- .partition{ logic(it) }﻿:	return Pair (collection(logic), collection(not logic)
+		- .plus:					list1.plus(list2) = list1 + list2
+		- .zip:						list1.zip(list2) = listOf[(i1, j1), (i2, j2), ..., (in, jn)], n = min(len(list1), len(list2))
+		- 
+	+ Order:
+		- .reverse/.sorted/.sortedBy/.
+		
+
+1.19. Enum class:
+	+ enum class Protocol(val num: Int, val str: String) {
+		WAITING(1, "WAITING_") { // a Anonymous Classes
+			override fun signal() = TALKING
+			override fun self() = str
+		},
+		TALKING(2, "TALKING_") {
+			override fun signal() = WAITING
+			override fun self() = str
+		};
+		abstract fun signal(): Protocol
+		abstract fun self(): String
+	}
+	
+	+ Mỗi enum constant đều có 2 propery:
+		- val name: String			// name of enum
+		- val ordinal: Int			// order of enum in list
+		
+	+ Từ Kotlin 1.1 trở đi, ta có thể truy cập vào các constant trong enum class bằng generic way: enumValues<T>() và enumValueOf<T>()
+		inline fun <reified T : Enum<T>> printEnumAllValues() {
+			val arr: Array<T> = enumValues<T>()
+			println("enumValues: " + arr.joinToString { it.name + " - " + it.ordinal })
+		}
+
+		inline fun <reified T : Enum<T>> printEnumValueOf(name: String) {
+			val element: T = enumValueOf<T>(name)
+			println("enumValueOf: " + element.name + " - " + element.ordinal)
+		}
+
+1.20. Overloading operator:
+
+	+ operator fun plus() {}
+
+	+ 1 ngôi:
+		+a = a.unaryPlus()			-a = a.unaryMinus()			!a = a.not()			a++ = a.inc()				a-- = a.dec()
+		
+	+ 2 ngôi:
+		a + b = a.plus(b)			a - b = a.minus(b)			a * b = a.times(b)		a / b = a.div(b)			a % b = a.rem(b)		a..b = a.rangeTo(b)
+	
+	+ in:
+		a in b = b.contains(a)		a !in b = !b.contains(a)
+		
+	+ index: [] -> get/set
+		a[i] = a.get(i)				a[i, j] = a.get(i, j)		a[i] = b === a.set(i, b)			a[i, j] = b === a.set(i, j, b)
+		
+	+ operator call:
+		a() = a.invoke()			a(i) = a.invoke(i)			a(i, j) = a.invoke(i, j)			a(i_1, ..., i_n) = a.invoke(i_1, ..., i_n)
+		
+	+ Toán tử tăng và gán﻿: nếu đã dùng plusAssign() thì ko dùng plus() nữa
+		a += b === a.plus/minus/times/div/mod/Assign(b)
+
+	+ Toán tử so sánh: a.compareTo(b)
+		
+
+
+1.21. Kotlin range: (IntRange , LongRange , CharRange) 	=== 	.rangeTo()	===		.downTo() 	===		i in 1..10
+	+ 1..10 step 3			4 downTo 1 step 2			1 until 10
+	+ 
+	
+
+1.23. Kotlin delegated: 	Delegates.kt
+	
+	+ Class Delegation
+		- class Derived(b: Base) : Base by b		:		Lớp Derived có thể kế thừa từ interface(chỉ có thể sử dụng delegation với interface) Base và ủy thác tất cả các public method cho một đối tượng xác định. 
+			Tức là, lớp Derived tuy kế thừa từ interface Base nhưng không phải implement function print() từ interface Base mà ủy thác cho đối tượng b có kiểu là BaseImpl, lớp cũng kế thừa từ Base và implement function print().
+	
+	+ Delegated property:	val/var <property name>: <Type> by <expression>		-->		var p: String by DelegateString()
+		- lazy property: Giá trị của property được tính toán trong lúc truy cập lần đầu tiên đến property
+		- observable property: lắng nghe sự thay đổi giá trị của property
+		- Lưu trữ các property trong một map thay vì lưu riêng từng property
+		
+		- Biểu thức ở sau by là delegate, bởi vì get()/set() tương ứng với property sẽ được ủy thác cho các method getValue()/setValue() của class Delegate. 
+			Delegate không cần phải implement bất kỳ interface nào nhưng phải cung cấp 2 function là getValue() (và setValue() đối với property kiểu var)
+			
+			class Delegate {
+				operator fun getValue(thisRef: Any?, property: KProperty<*>): String {
+					System.out.println("first")
+					return "$thisRef, thank you for delegating '${property.name}' to me!"
+				}
+
+				operator fun setValue(thisRef: Any?, property: KProperty<*>, value: String) {
+					println("$value has been assigned to '${property.name} in $thisRef.'")
+				}
+			}
+		
+		- lazy: là một function lấy một lambda và trả về một instance của Lazy<T> để có thể implement một lazy property: lần gọi đầu tiên đến function get() sẽ thực thi đoạn code trong lambda được truyền vào 
+			để khởi tạo kết quả và gán kết quả cho property. Các lần gọi get() sau sẽ chỉ trả về giá trị của property.
+			Mặc định, việc tính toán của lazy property được synchronized: giá trị được tính toán chỉ trong 1 thread, và tất cả các thread sẽ sử dụng cùng kết quả đó.
+			+ LazyThreadSafetyMode.NONE / LazyThreadSafetyMode.PUBLICATION: tính toán value trong 1 thread hoặc multi thread. (truyền tham số LazyThreadSafetyMode.PUBLICATION cho function lazy())
+		
+		- observable: Delegates.observable() nhận vào 2 tham số: giá trị khởi tạo của property và một handler trong trường hợp property thay đổi giá trị. 
+			Handler mà chúng ta truyền vào sẽ được thực thi mỗi lần chúng ta gán giá trị cho property (sau khi việc gán được thực thi). Handler này có 3 tham số: property được gán, giá trị cũ và giá trị mới.
+			+ var name: String by Delegates.observable("<no name>") { prop, old, new -> println("$old -> $new") }
+			
+			+ vetoable(): Hanlder được truyền vào vetoable sẽ được gọi trước khi việc gán được thực thi -> có thể can thiệp vào việc gán và phủ quyết việc đó.
+			
+		- Lưu trữ property trong một map:
+			+ class User(val map: Map<String, Any?>) {
+				  val name: String by map
+				  val age: Int     by map
+				}
+
+				val user = User(mapOf(
+				  "name" to "John Doe",
+				  "age"  to 25
+				))
+						
+		
+		- Local delegated property: 	Bạn có thể khai báo một local variable như là một delegated property
+			+ fun example(computeFoo: () -> Foo) {		// computeFoo: lambda, Biến memoizedFoo sẽ chỉ được tính toán vào lần truy cập đầu tiên bằng lambda computeFoo được truyền vào
+				val memoizedFoo by lazy(computeFoo)		// Nếu someCondition bằng false, memoizedFoo sẽ không được khởi tạo.
+
+				if (someCondition && memoizedFoo.isValid()) {
+					memoizedFoo.doSomething()
+				}
+			}
+	
+	
+1.xx. Kotlin idioms
+		
+	+ POJO object: 				data class
+	+ Parameter default: 
+	+ String template: 			println("Name $name")
+	+ Ép kiểu:					as?		trả về null nếu ép kiểu thất bại
+	+ Kiểm tra kiểu: 			when (x) { 
+									is Type1 -> ...
+									is Type2 -> ...
+									else	 -> ...
+								}
+	
+	+ Khởi tạo lazy:			val p: String by lazy {"ex"}	giá trị lazy sẽ ko đc khởi tạo trước khi biến được sử dụng lần đầu, ko bắn exception, sử dụng đc với cả biến "val & var"
+	+ lateinit: 				cam kết khẳng định biến sẽ được khởi tạo trước khi sử dụng, nếu truy cập trước khi khởi tạo thì bắn exception UninitializedPropertyAccessException, chỉ sử dụng đc với biến "var"
+	+ Null safety:				file?.size()
+		- Theo mặc định, tất cả các biến, thuộc tính của Object đều là non-null (không thể giữ giá trị null)  – Trừ khi chúng được khai báo là nullable:	var number: Int? = null
+		- 
+		- 
+		
+	+ by
+	+ with(): 	rất hữu ích khi bạn cần truy xuất vào nhiều thuộc tính của cùng một đối tượng. Nó giúp bạn đỡ phải gõ nhiều tên đối tượng để gọi thuộc tính
+	
+	+ Extension function: 		fun String.spaceToCamelCase() { ... }		->		"Convert this to camelcase".spaceToCamelCase()
+	+ Tạo một singleton:		
+	+ Single-expression functions:	
+	+ Gọi nhiều method trên cùng một instance object﻿: with(params) { param.method1()	param.method2()		param.method3() }
+	+ companion object: ~ static object -> companion object Test { fun callMe() = println("I'm called.") }
+		- Các đối tượng companion có thể truy cập các thành viên riêng tư của class. Do đó, chúng có thể được sử dụng để thực hiện factory phương thức patterns
+	+ .let/ .apply
+	
+	// Layout
+	+ Static Layout Import: view_id.event()		// Fragment: setContentView() trong onCreateView(), dùng UI trong onViewCreated()
+	
+	+ Exception: chỉ duy nhất các lỗi sau đây mới gây ra NullPointerException
+		- user throw NullPointerException
+		- toán tử: !!		-> sử dụng khi muốn throw NullPointerException để test như java		:		val number: Int? = null; number!!.toString()
+		- lateinit: truy xuất trước khi khởi tạo -> UninitializedPropertyAccessException
+		- 
+		
+	+ Chuyển một Object sang Map:
+		- 
+	 
+  	
+2.xx. Keys of Kotlin
+	+ by:
+	+ reified:		https://viblo.asia/p/tu-khoa-reified-trong-kotlin-loi-hai-ra-sao-4P856kOAKY3
+	+ lateinit:
+	+ object: khai báo class Singleton, mọi field bên trong ddeuf là static
+	+ companion object: gom các class static member vào 1 chỗ
+	+ const: khai báo các hằng số với kiểu dữ liệu nguyên thuỷ
+	+
+	+ 
+	+
+	+ 
+	+
+	+ 
+	+
+	+ 
+	+
+	+ 
+	+
+	+ 
+	+
+	+ 
+	+
+	+ 
+	+
+	+ 	
+
+# https://kotlinlang.org/docs/kotlin-tour-control-flow.html#when
+# https://buihainam.com/kotlin/kotlin_property_field/
+
+
+![alt text](https://developer.android.com/topic/libraries/architecture/images/final-architecture.png)
+
+
+API https://www.themoviedb.org/documentation/api
+
+Kotlin: https://kotlinlang.org/docs/reference/
+
+Data binding: https://developer.android.com/topic/libraries/data-binding/
+
+RxJava 2, RxAndroid: https://github.com/ReactiveX/RxJava
+
+Coroutines: https://kotlinlang.org/docs/reference/coroutines.html
+
+Retrofit 2: https://github.com/square/retrofit
+
+Moshi: https://github.com/square/moshi
+
+Glide: https://github.com/bumptech/glide
+
+Dagger-Hilt: https://developer.android.com/training/dependency-injection/hilt-android
+
+Android X: https://developer.android.com/topic/libraries/support-library/androidx-overview
+
+
+===> Android Architecture Component
+
+Lifecycle: https://developer.android.com/topic/libraries/architecture/lifecycle
+
+View Model: https://developer.android.com/topic/libraries/architecture/viewmodel
+
+Live data: https://developer.android.com/topic/libraries/architecture/livedata.html
+
+Room: https://developer.android.com/topic/libraries/architecture/room.html
+
+Navigation: https://developer.android.com/guide/navigation
+
+Architecture: https://github.com/googlesamples/android-architecture-components
+
+<===
+
+https://developer.android.com/topic/modularization?hl=en
+
+https://developer.android.com/build/build-variants#dependencies
+
+
+https://developer.android.com/training/
+https://developer.android.com/build/
+https://developer.android.com/topic/
+https://developer.android.com/guide/
+
+https://fs-sournary.github.io/tags/Kotlin/
+
