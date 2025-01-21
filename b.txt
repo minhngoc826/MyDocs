@@ -1,1111 +1,266 @@
-diff --git a/1.AndroidApp.txt b/1.AndroidApp.txt
-new file mode 100644
-index 0000000..ba14259
---- /dev/null
-+++ b/1.AndroidApp.txt
-@@ -0,0 +1,225 @@
-+// Android App
-+
-+1. Overview
-+	- Languages:			C++, Java/Kotlin
-+	- Android Package: 		.apk					--> install app
-+	- Android App Bundle:	.aab					--> 
-+	
-+	- 1 app ~ 1 sandbox: security privacy
-+		+ Android = Linux with multi user:	1 app = 1 user
-+		+ System define 1 UID for 1 app, app can not change UID. System set permission of all files in app and only app's UID can read those files
-+		+ Each process has each VM -> mã của ứng dụng sẽ chạy độc lập với các ứng dụng khác.
-+		+ Each app runs in each Linux process. System start process when any component of app is run, then kill process when there is no component run or get memmory for other app.
-+		+ Minimum permission: app only read app component, not other app.
-+		
-+	- Shared data between 2 app:
-+		+ 2 app share 1 UID ~ 2 apps - 1 process/1 VM				---		android:sharedUserId: set UID for app, Deprecated from API 29
-+		+ Request Permissions
-+			
-+	- Components:
-+		+ Activity:				start = Intent
-+		+ Service:				start = Intent
-+		+ BroadcasrReceiver:	start = Intent
-+		+ COntentProvider:		start = ContentResolver
-+		
-+	- Manifest:
-+		+ Declare: permissions, SDK, libs (Google map), hardware (camera, bluetooth, screen = <uses-feature ... />)
-+		+ Declare Components:
-+			- Intent filter
-+			- 
-+		
-+	- Resources
-+	- assets/:		AssetManager
-+	
-+	- gradle: 
-+	
-+
-+2. App Resources: res/																	https://developer.android.com/guide/topics/resources/providing-resources?hl=vi
-+	- anim/		animator/
-+	- color/
-+	- values/:					colors, dimens, strings, styles, arrrays				/ values-vi,-en-US
-+	- drawable/	mipmap/																	/ mipmap-xxhdpi,-anydpi
-+	- layout/	menu/
-+	- raw/:						Resources.openRawResource(R.raw.filename)
-+	- xml/:						Resources.getXML()
-+	- font/:					R.font.filename
-+	
-+	- 2.1. Extend resource:			<resources_name>-<qualifier>-<qualifier> follow order below:
-+		+ mcc-mnc:				mcc310, mcc310-mnc004
-+		+ language: 			en-us, en-rUs 		/		ldrtl, ldltr
-+		+ dimens:				sw320dp, w720dp, h720dp
-+		+ screen size:			small, normal, large, xlarge
-+		+ screen type:			round, notround		/		notouch, finger
-+		+ HDR:					highdr, lowdr 								-- Dải động cao (HDR)
-+		+ orientation:			land, port
-+		+ UI mode:				car, desk, television, appliance (noo screen), watch, vrheadset (VR: kính thực tế ảo)
-+		+ theme/mode:			night, nonight
-+		+ screen dpi:			ldpi ~ 120, mdpi ~ 160, hdpi ~ 240, xhdpi ~ 320, xxhdpi ~ 480, xxxhdpi ~ 640, nodpi ~ for bitmap, tvdpi ~ 213, anydpi
-+		+ keyboard:				keysexposed, keyshidden, keyssoft		/		nokeys, qwerty, 12key
-+		+ navigate:				navexposed, navhidden			/		nonav, dpad, trackball, wheel
-+		+ API:					v4, v26, v33
-+	
-+	- 2.2. Alias resource:
-+		+ 1 icon - 2 xml
-+		+ layout:		<merge> <include layout="@layout/main_layout" /> </merge>
-+		+ 
-+		
-+	- 2.3. Using:
-+		+ Code:			R.color.secondary_text_dark
-+		+ XML:			android:textColor="@android:color/secondary_text_dark"
-+		+ Reference:	android:textColor="?android:textColorSecondary"
-+		
-+	- 2.4. Configs changes:		onConfigurationChanged()
-+		+ Activity: not recreate activity --> android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|  keyboardHidden  |locale|layoutDirection|  uiMode"
-+		
-+	- 2.5. Locale: language
-+		+ Translate:  		not translate = <xliff:g> 														<xliff:g id="time" example="5 days">%1$s</xliff:g> until holiday
-+		+ get locale:		Locale primaryLocale = context.getResources().getConfiguration().getLocales().get(0);			val primaryLocale: Locale = context.resources.configuration.locales[0]
-+		+ testing locale:	
-+			- gradle:	buildTypes.getByName("debug") { isPseudoLocalesEnabled = true }
-+			- change language
-+			
-+		+ Support language:
-+			- gradle:			defaultConfig { resConfigs("en", "es") }							--> format(locale, "Choose a %d-digit PIN", 4)
-+			- Locale config: 	https://developer.android.com/guide/topics/resources/app-languages?hl=vi
-+			- set locale default:
-+				+ val appLocale: LocaleListCompat = LocaleListCompat.forLanguageTags("xx-YY")
-+				  AppCompatDelegate.setApplicationLocales(appLocale)							// Call this on the main thread as it may require Activity.restart()
-+				  mContext.getSystemService(LocaleManager.class).setApplicationLocales(new LocaleList(Locale.forLanguageTag("xx-YY")));		---		LocaleList currentAppLocales = mContext.getSystemService(LocaleManager.class).getApplicationLocales();
-+	
-+	- 2.6. Resource types:		https://developer.android.com/guide/topics/resources/animation-resource?hl=en
-+		+ Animaton:
-+			- Property animation: Animator		--> res/animator/		--> ValueAnimator, ObjectAnimator, or AnimatorSet = <animator>, <objectAnimator>, <set>
-+				+ Using: 
-+					- val set: AnimatorSet = AnimatorInflater.loadAnimator(myContext, R.animator.property_animator).apply { setTarget(myObject)  start() }
-+			
-+			- View animation:					--> res/anim/			
-+				+ Tween animation: Animation 		res/anim/filename.xml				--> creates an animation by performing a series of transformations on a single image
-+					- support: 					<set>, <alpha>, <scale>, <translate>, <rotate>
-+					- custom interpolators:		res/anim/filename.xml
-+						+ 
-+					- Using:
-+						+ val hyperspaceJump: Animation = AnimationUtils.loadAnimation(this, R.anim.hyperspace_jump)					image.startAnimation(hyperspaceJump)
+diff --git a/DevopsDoc/0.DevOps.txt b/DevopsDoc/0.DevOps.txt
+index 1aae9a9..630c7a2 100644
+--- a/DevopsDoc/0.DevOps.txt
++++ b/DevopsDoc/0.DevOps.txt
+@@ -293,7 +293,7 @@
+ 							spring.datasource.testOnBorrow=true									
+ 							spring.datasource.hikari.maximum-pool-size=10						
+ 						
+-				- build:	(user shoeshop)			mvn install -DskipTest=true						(-DskipTest: bß╗Å qua maven auto test)				--> build ra 'target' folder
++				- build:	(user shoeshop)			mvn install -DskipTests=true						(-DskipTests: bß╗Å qua maven auto test)				--> build ra 'target' folder
+ 					
+ 				- run:		(user shoeshop)			nohup java -jar target/pathOfJarFile 2>&1 &		(nohup: auto save log to nohup.out file, 		2>&1 &: chß║íy background -> kill process: kill -9 pId, -9=buß╗Öc dß╗½ng)
+ 													nohup java -jar target/shoe-ShoppingCart-0.0.1-SNAPSHOT.jar 2>&1 &								// -Djava.net.preferIPv4Stack=true: set IPv4  		-Djava.net.preferIPv6Addresses=false
+@@ -492,7 +492,7 @@
+ 							- whoami
+ 							- pwd
+ 							- ls
+-							- mvn install -DskipTest=true
++							- mvn install -DskipTests=true
+ 						tags:
+ 							- gitlab-runner
+ 					
+@@ -625,7 +625,7 @@
+ 					FROM maven:3.5.3-jdk-8-alpine as build						# tß║ío input build cho run state
+ 					WORKDIR /app
+ 					COPY . .
+-					RUN mvn install -DskipTest=true								# build folder: /app/target
++					RUN mvn install -DskipTests=true								# build folder: /app/target
+ 					
+ 				+ ## run state
+ 					-------------------------------------------------------------------------
+@@ -664,7 +664,11 @@
+ 			* Note: size of image chß╗ë phß╗Ñ thuß╗Öc step run, ko phß╗Ñc thuß╗Öc step build
+ 		
+ 		+ Dockerize project: frontend
+-			- 
++			- build: 
++				+ RUN npm install
++				+ RUN npm run build
++			- run: 
++				+ copy /dist/ to /usr/share/nginx/html/
+ 			
+ 		+ Example: https://elroydevops.tech/mau-dockerfile-cac-du-an/
+ 		
+@@ -709,6 +713,9 @@
+ 					- docker push domain/project/repo:tag							// format: domain/project/repo:tag				// 192.168.56.10:5000/devops/shoeshop:v3	
+ 					- docker pull 192.168.56.10:5000/devops/shoeshop:v3
+ 					
++				+ convert domain port:
++					- 
 +					
-+				+ Frame animation: AnimationDrawable	res/drawable/filename.xml	 	--> showing a sequence of images in order			
-+					- support: <animation-list>, <item>
-+					- Using:
-+						+ rocketImage.setBackgroundResource(R.drawable.animate_rocket_thrust)
-+						  val rocketAnimation = rocketImage.background
-+						if (rocketAnimation is Animatable) {
-+							rocketAnimation.start()
-+						}
+ 			- harbor: cß║ºn mua domain (50k), thu├¬ vps gi├í rß║╗		- 	
+ 				+ vps: 		aws EC2
+ 					- aws EC2:
+@@ -733,14 +740,137 @@
+ 			- Docker network
+ 		
+ 		+ Docker & Gitlab CI/CD:
+-			- 
++			- usermod -aG docker gitlab-runner					// add group docker for user gitlab-runner, ─æß╗â gitlab c├│ thß╗â run docker
++			- image format domain/project/image:tag_commit		-> add variables for Gitlab: project settings -> CI/CD -> Variables -> add variables for registry:	REGISTRY_URL / PROJECT / VERSION / USER / PASSWORD
++			- edit .gitlab-ci.yml:																										Gitlab variables:			CI_PROJECT_NAME, CI_COMMIT_TAG, CI_COMMIT_SHORT_SHA
++				+ variables global:		
++					- DOCKER_IMAGE: 		${REGISTRY_URL}/${REGISTRY_PROJECT}/${CI_PROJECT_NAME}:${CI_COMMIT_TAG}_${CI_COMMIT_SHORT_SHA}
++					- DOCKER_CONTAINER:		$CI_PROJECT_NAME
++				+ build&push:
++					- before_script: 	docker login ${REGISTRY_URL} -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD}
++					- script:			docker buil -t ${DOCKER_IMAGE} .												docker push $DOCKER_IMAGE
++				+ run:
++					- before_script: 	docker login ${REGISTRY_URL} -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD}
++					- script:			docker run --name $DOCKET_CONTAINER -dp 8080:8080 $DOCKER_IMAGE					// note: port in Dockerfile must same containerPort in run command: -dp 8080:8080 and not use port which is running on server
++				+ showlog:
++					- script:			docker logs $DOCKER_CONTAINER
++			- note: 
++				+ REGISTRY_URL: 
++					- harbor registry: 		server.example.com
++					- private registry:		192.168.56.10:5000			// tr╞░ß╗¢c hß║┐t cß║ºn add cert cho gitlab ─æß╗â truy cß║¡p docker registry; need port, nß║┐u convert ─æ╞░ß╗úc 192.168.56.10:5000 sang domain server.example.com th├¼ d├╣ng server.example.com
+ 		
+-	1.5. Jenkins
+-	
+-	1.6. Monitoring
+-	
++	1.5. Jenkins:
++		- Define:				1 m├íy chß╗º tß╗▒ ─æß╗Öng h├│a (open source) h├áng ─æß║ºu, cung cß║Ñp nhiß╗üu plugins hß╗ù trß╗ú x├óy dß╗▒ng, triß╗ân kh├íi v├á tß╗▒ ─æß╗Öng h├│a bß║Ñt k├¼ project, ko chß╗ë l├á CI/CD		- language: groovy
++		- install jenkins:		create file: /tools/jenkins/jenkins-install.sh				-> 		run: chmod +x ../jenkins-install.sh (cap quyrn execute)				sh/bash ../jenkins-install.sh
++									#!/bin/bash
++									apt install openjdk-17-jdk -y
++									java --version
++									wget -p -O - https://pkg.jenkins.io/debian/jenkins.io.key | apt-key add -
++									sh -c 'echo deb http://pkg.jenkins.io/debian-stable binary/ > /etc/apt/sources.list.d/jenkins.list'
++									apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 5BA31D57EF5975CA
++									apt-get update
++									apt install jenkins -y
++									systemctl start jenkins
++									ufw allow 8080					# open firewall port 8080 for jenkins
++								
++								+ add host for jenkins-sever & window host: 192.168.56.40 jenkins.devops.tech
++								+ reverse proxy: 
++									- dung webserver: 	nginx
++									- file config:		nano /etc/nginx/conf.d/jenkins.devops.tech.conf
++								+ neu co nhieu version java:	update-alternatives --config java -> select jdk muß╗æn d├╣ng
++								
++		- Jenkins: la noi chay pipeline, ko deploy project tren jenkins server
++		- Manage Jenkins:
++			+ System:	
++			+ Plugins:	add/remove plugin
++			+ Nodes: 	add node server agent vao jenkins server -> dung jenkins agent de connect toi cac server deploy project, ko su dung ssh vi rat nguy hiem (ket noi p2p)
++			+ Security:	phan quyen, jenkins defalut ko co phan quyen, c├ái plugin ─æß╗â ph├ón quyß╗ün
++			+ Crendentials:		save password, private key, ...
++			+ Users:
++			+ Systemlog:	
++			+ Jenkins CLI: 		ho├án to├án tß╗▒ ─æß╗Öng mß╗ìi thß╗⌐
++		
++		- Jenkins CI/CD:
++			// 1. kß║┐t nß╗æi jenkins-server ─æß║┐n lab-server: 		jenkins Agent
++			+ Jenkins Agent:				java version on client ~ java version on Jenkins server install (thay v├¼ d├╣ng ssh - kß║┐t nß╗æi ngang h├áng, ko bß║úo mß║¡t, dß╗à g├óy lß╗ùi)
++				- lab-server: 				
++					+ install java version for node (same java version on jenkins): apt install jdk...
++					+ adduser jenkins
++					+ add folder: /var/lib/jenkins (n╞íi l╞░u c├íc project cß║ºn triß╗ân khai tr├¬n lab-server)		-> 		chown -R jenkins. /var/lib/jenkins
++					+ ─æß╗â user jenkins chß║íy ─æc file project (.jar) th├¼ cß║ºn g├ín quyß╗ün NOPASSWD cho user jenkins giß╗æng user gitlab-runner
++				- Jenkins:				
++					+ add Node:		
++						- number of executors: 	sß╗æ pipeline ─æc chß║íy c├╣ng l├║c	-	Custom workdir path / Remote root directory: 1 folder on lab-server (/var/lib/jenkins)
++						- port/inbound:			create fixed port in Security (ko ─æc tr├╣ng port)	
++						- save:					click to node to show config to connect client -> run from agent command line, with the secret stored in a file
++				- lab-server:			su jenkins	-	cd /var/lib/jenkins														// ko d├╣ng user root
++										echo 377af60a51c9471b486e10c4b928ca5fb66c430986e337b67162df2bdc101e1a > secret-file
++										curl -sO http://jenkins.devops.tech:8080/jnlpJars/agent.jar
++										java -jar agent.jar -url http://jenkins.devops.tech:8080/ -secret @secret-file -name "lab-server" -webSocket -workDir "/var/lib/jenkins" > nohup.out 2>&1 &
++			
++			// 2. kß║┐t nß╗æi jenkins-server ─æß║┐n gitlab-server: 	2.1. plugin-gitlab & BlueOcen		2.2. tß║ío pipeline CI/CD
++			+ Jenkins Gitlab:
++				// 2.1. Kß║┐t nß╗æi jenkins-server ─æß║┐n gitlab-server
++				- Gitlab:
++					+ tß║ío user jenkins c├│ quyß╗ün admin, ─æß╗â c├│ thß╗â pull bß║Ñt cß╗⌐ project n├áo	-> 	login user jenkins -> Profile -> Access Token: tß║ío token with scope API (glpat-yxTGnBKM4XPAEYJ8WiUZ: add token v├áo jenkins)
++				- Jenkins: 
++					+ install plugin: 	Gitlab, BlueOcen (down log, UI hiß╗çn ─æß║íi h╞ín)			- add domain gitlab
++					+ Manage Jenkins:	-> System -> Gitlab:	set name - domain - add API token [Domain: Global  -  Kind: API token  -  Scope: Global/System  -  ID: jenkins-gitlab-user] -> Add -> Test Connection Success
++					+ Save
++				// 2.2. Tß║ío pipeline CI/CD
++				- Jenkins: create Folder & Pipeline
++					+ Folder:	(Dashboard -> New Item) tß║ío mß╗ùi folder cho dß╗▒ ├ín -> chß╗⌐a jobs cß╗ºa dß╗▒ ├ín ─æ├│
++						- lab-server: folder Action-in-lab
++					+ Pipeline: tß║ío pipeline cho dß╗▒ ├ín in folder Action-in-lab ( Dashboard -> Action-in-lab folder -> New Item -> Pipeline: name shoeshop) -> Config as below:
++						- Config pipeline shoeshop:	(Full project name: Action-in-lab/shoeshop)
++							- Discard old builds: 	Max build to keep - giß╗» lß║íi sß╗æ bß║ún build latest = 10
++							- Gitlab connection:
++							- Build trigger: 		event push, merge, ...
++							- Pipeline:				Pipeline script from SCM -> SCM: Git / Repo Url: http://gitlab.devops.tech/group/shoeshop.git / Credentials: new Jenkins [user: jenkins, pass: password]
++							- Branches to build:	add multi branch
++							- Jenkinsfile:			create file on git project
++						- Save
 +						
-+		+ Color state:	ColorStateList				--> res/color/filename.xml				--> <selector>  <item android:state_xxx = "true|false" /> </selector>
-+		
-+		+ Drawable:		getDrawable(int)			--> res/drawable/filename.xml			https://developer.android.com/guide/topics/resources/drawable-resource?hl=en
-+			- Bitmap file: 			BitmapDrawable 		(PNG, WEBP, JPG, or GIF)			<bitmap> 
-+			- Nine-patch file:		NinePatchDrawable  	(.9.png)							<nine-patch			
-+			- Layer list:			LayerDrawable											<layer-list> <item android:drawable ... /> </layer-list>
-+			- State list:			StateListDrawable										<selector>  <item android:state_xxx = "true|false" /> </selector>
-+			- Level list:			LevelListDrawable										<level-list> <item android:drawable ... /> </level-list>
-+			- Transition drawable:	TransitionDrawable										<transition> <item android:drawable ... /> </transition>
-+			- Inset drawable:		InsetDrawable											<inset			
-+			- Clip drawable:		ClipDrawable											<clip
-+			- Scale drawable:		ScaleDrawable											<scale
-+			- Shape drawable:		GradientDrawable										<shape>	<corners> <gradient> <padding> <size> <solid> <stroke>  </shape>
-+			
-+		+ Layout:									--> res/layout/filename.xml
-+		
-+		+ Menu:										--> res/menu/filename.xml				<menu> <item>  <group> <item> </group>  <menu> ... </menu>  </menu>
-+			+ Using:
-+				- override fun onCreateOptionsMenu(menu: Menu): Boolean {
-+					menuInflater.inflate(R.menu.example_menu, menu)
-+					return true
-+				}
-+				- fun onGroupItemClick(item: MenuItem) { }
-+				
-+		+ String:								https://developer.android.com/guide/topics/resources/string-resource?hl=en
-+			- String array:						<string-array name="array_name"> <item>xxxStr</item> </string-array>													resources.getStringArray(R.array.planets_array)
-+			- Quantity strings (plurals):		<plurals name="plurals_name"> <item quantity=["zero"|"one"|"two"|"few"|"many"|"other"]>xxx %d Str</item> </plurals>		resources.getQuantityString(R.plurals.numberOfSongsAvailable, count, count)
-+			- Format string:					<string name="welcome_messages">Hello, %1$s! You have %2$d new messages.</string>										var text = getString(R.string.welcome_messages, username, mailCount)
-+			- Styling with HTML markup:			<string name="welcome">Welcome to <b>Android</b>!</string>
-+			- Styling with spannables:
-+			- Styling with annotations:			<string name="title">Best practices for <annotation font="title_emphasis">text</annotation> on Android</string>			val annotations = titleText.getSpans(0, titleText.length, Annotation::class.java)
-+		
-+		+ Style:									--> res/values/filename.xml
-+			- Style:							<style name="style_name"> <item name="">style_value</item> </style>
-+			 
-+		+ Font:										--> res/font/filename.xml
-+			- Bundled font:						<font-family> <font android:font/fontStyle/fontWeight = "" /> </font-family>
-+			- Downloadable font: 				<font-family android:fontProviderXXX  android:fontProviderYYY />
-+			
-+		+ More types:
-+			- Boool:	
-+			- Dimension:
-+			- ID:
-+			- Integer
-+			- Integer array:
-+			- Typed array:						
-+			
-+	
-+3. Manifest:									https://developer.android.com/guide/topics/manifest/manifest-intro?hl=vi
-+	- App level:								<manifest>																	<application>				
-+	- Components:								<activity>, <activity-alias>, <provider>, <receiver>, <service>				<intent-filter>, <action>, <category>, <data>, <meta-data>
-+	- Device compatibility:						<compatible-screens>
-+	- Permissions:								<path-permission>, <permission>, <permission-group>, <permission-tree>		<uses-permission>, <uses-permission-sdk-23>											<grant-uri-permission>
-+	- Support:									<supports-gl-texture>, <supports-screens>									<uses-configuration>, <uses-feature>, <uses-sdk>(min/maxSdk: overriden by gradle)
-+	- Library:									<uses-library>, <uses-native-library>
-+	- Access other apps:						<queries>
-+	- Test:										<instrumentation>
-+	
-+	- Limit:									<package> - 1000			<meta-data> - 1000				<uses-library> - 1000
-+		+ Attribute Length:						name - 1024					versionName - 1024				host - 255								mimeType - 255
-+		
-+	
-+	- Details:
-+		+ <manifest>:
-+			- android:sharedUserId				-	set same UID for many app, @Deprecated from API 29				 	=android:sharedUserLabel									<-- android:sharedUserMaxSdkVersion="32"
-+			- android:targetSandboxVersion		- 	1 (api < 26) [can shared UID]										2 (api >= 26) [new SELinux sandbox, usesCleartextTraffic = false, Không cho phép chia sẻ mã nhận dạng người dùng]
-+			- android:installLocation			- 	"auto" | "internalOnly" | "preferExternal"
-+			
-+			- 
-+		+ <application>
-+			- 
-+			- 
-+		+ <activity>
-+			-
-+			-
-+		+ 
-+	
-+	
-+4. App Architecture
-+	- 4.1. Overview
-+	- 4.2. Modularization
-+	- 4.3. Architecture Components
-+			+  save state off UI: reboot, system kill, recent
-+				+ 1. Viewmodel
-+				+ 2. Save state:
-+					+ Jetpack Compose: rememberSaveable.
-+					+ Khung hiển thị (View): API onSaveInstanceState().
-+					+ ViewModel: SavedStateHandle.
-+				3. Local storage: db, share preference
-+				4. SavedStateRegistry:	Activity, Fragment			
-+	- 4.4. App entry points
-+	- 4.5. App Naigation
-+	- 4.6. Dependencies Injection
-+	- 4.7. App Startup
-+	
-+5. Devices:
-+	- Compatible:
-+	- Phone & Tablet
-+	- Responsive
-+	- Wear
-+	- TV
-+	- Chrome OS
-+	- SDK
-+
-+
-+6. Google Play
-+	- 
-+
-+
-+7. Core areas
-+
-+
-+8. Build for enterprise
-diff --git a/2.AppNavigation.txt b/2.AppNavigation.txt
-new file mode 100644
-index 0000000..a664bfd
---- /dev/null
-+++ b/2.AppNavigation.txt
-@@ -0,0 +1,443 @@
-+// Contents
-+
-+1. Overview: 
-+	- Class: 				NavGraph, NavHostController, NavHost/NavHostFragment, NavDestination, Route(NavBackStackEntry.toRoute<Route>(), SavedStateHandle.toRoute<Route>(), NavArgument)
-+							NavGraphBuilder, NavType, NavDeepLinkRequest, NavAction
-+	- Navigate:				composable(route = xx) { ComposableScreen() } = composable<route> { backStackEntry -> ComposableScreen() }
-+	- Destination types:	hosted, dialog, activity	-> composable<route> {}, dialog<route> {} / dialog<Fragment, route> {}, activity<route> {}, fragment<Fragment, route> {}
-+2. Navigation:
-+	- Compose:		composable<route> {}
-+	- Fragment:		fragment<Fragment, route> {}
-+3. Destination:
-+	- Dialog:					dialog<route> {} / dialog<Fragment, route> {}
-+	- Activity:					activity<route> { label = ""	activityClass = MyActivity::class }
-+	- Custom Destination type: 	add new Navigator to NavController --> using getNavigatorProvider().addNavigator(navigator)
-+4. Nested Graph:
-+				- NavHost(navController, startDestination = Start) {
-+					composable<Start>, composable<Register>, navigation<Game>(startDestination = Match) { composable<Match>, composable<InGame>, composable<ResultWinner>, composable<GameOver> }
-+				}
-+5. Deep links: handleDeepLink() <-- onNewIntent()
-+	- explicit:	NavDeepLinkBuilder(context).setGraph(R.navigation.nav_graph).setDestination(R.id.android).setArguments(args).setComponentName().createPendingIntent() / NavController.createDeepLink()
-+	- implicit:	
-+		+ <deepLink app:uri/action/mimeType/> 		& 		<activity> <nav-graph android:value="@navigation/nav_graph" /> </activity> 
-+		+ deepLink<Route> { basePath = "" 	action = "" 	mimeType="" }
-+6. Type safety:
-+	- @Serializable object Route	/ 	@Serializable data class Route(params: String)
-+7. Encapsulate navigation
-+	- NavGraphBuilder.extendDestination()
-+	- NavController.extendNavigate()
-+	- Using internal: 
-+8. Animations
-+9. 
-+
-+
-+// Details
-+
-+1. Overview
-+	- gradle: "androidx.navigation:navigation-compose:version"  / navgation-compose/ -fragment/ -ui/ -dynamic-features-fragment/ -testing
-+
-+	- NavGraph:					map composable - destination
-+	- NavHostController:		navigate = redirect ( = rememberNavController() )
-+		+ contains list[Navigator] -> navigate:
-+			- Activity:	using ActivityNavigator & ActivityNavigator.Destination
-+			- Fragment:	using FragmentNavigator (NavHostFragment add FragmentNavigator to NavController)
-+	- NavHost/NavHostFragment:	show destination base on route (Composable show another composable base on route)  ( = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment )
-+	- NavDestination:		
-+	- Route:					Any serializable data type.
-+	
-+	- find navController:
-+		+ Fragment.findNavController() 						+ NavHostFragment.findNavController(Fragment)					 = NavHostFragment.navController  
-+		+ View.findNavController()							+ Navigation.findNavController(Activity, @IdRes int viewId)
-+		+ Activity.findNavController(viewId: Int)			+ Navigation.findNavController(View)
-+		
-+	- Destination types:
-+		+ hosted: 	same size, previous destinations are not visible 				-> Main & details screen
-+			- composable<Home> { HomeScreen(onNavigateToSettings = { navController.navigate(route = Settings) }) }
-+		+ dialog:	overlay UI, previous destinations are visible underneath		-> Alert, selections, forms
-+			- dialog<Settings> { SettingsScreen() }
-+		+ activity:	exit point to the navigation graph when interacting with third party activities or as part of the migration process
-+			- activity<MyRoute> {
-+				label = getString(R.string.activity_title)
-+				// custom argument types, deepLinks...
-+				activityClass = MyActivity::class 
-+			}
-+	
-+	- Benefit:
-+		+ Animations and transitions: Provides standardized resources for animations and transitions.
-+		+ Deep linking: Implements and handles deep links that take the user directly to a destination.
-+		+ UI patterns: Supports patterns such as navigation drawers and bottom navigation with minimal additional work.
-+		+ Type safety: Includes support for passing data between destinations with type safety.
-+		+ ViewModel support: Enables scoping a ViewModel to a navigation graph to share UI-related data between the graph's destinations.
-+		+ Fragment transactions: Fully supports and handles fragment transactions.
-+		+ Back and up: Handles back and up actions correctly by default.
-+	
-+	
-+2. Navigation:
-+	- 2.1. Compose 
-+		+ Using NavHost(): As part of the NavHost
-+			NavHost(navController = rememberNavController(), startDestination = Profile) {
-+				composable<Profile> { ProfileScreen( /* ... */ ) }
-+				composable<FriendsList> { FriendsListScreen( /* ... */ ) }
-+				// Add more destinations similarly.
-+				composable(route = FriendsList) { FriendsListScreen( /* ... */ ) }
-+			}
-+			
-+		+ Programmatically: NavController.createGraph()
-+			val navGraph by remember(navController) {
-+			  navController.createGraph(startDestination = Profile)) {
-+				composable<Profile> { ProfileScreen( /* ... */ ) }
-+				composable<FriendsList> { FriendsListScreen( /* ... */ ) }
-+			  }
-+			}
-+			NavHost(navController, navGraph)
-+			
-+		+ Pass param to destination: @Serializable
-+			- object Profile / data object Profile: 	no param			~= Profile::class (KClass<T>)
-+			- data class Profile(val name: String):		pass param
-+			
-+		+ Navigate:
-+			- current route: = NavBackStackEntry.toRoute<Route>() / SavedStateHandle.toRoute<Route>()
-+				composable<Profile> { backStackEntry ->
-+					val profile: Profile = backStackEntry.toRoute<Profile>()
-+					ProfileScreen(name = profile.name)
-+				}
-+
-+
-+	- 2.2. Fragment
-+		+ Programmatically: 		NavHostFragment -> createGraph
-+			- NavHostFragment: XML -> layout -> FragmentContainerView: id/nav_host_fragment"		name = "androidx.navigation.fragment.NavHostFragment"		and without navGraph attribute
-+			- code:
-+				+ find navController: val navController = findNavController(R.id.nav_host_fragment)
-+				+ createGraph: fragment<ProfileFragment, Profile> { label = "Profile" }					fragment<FriendsListFragment, FriendsList>() { label = "Friends List" }
-+		
-+		+ XML:
-+			- NavHostFragment: XML -> layout -> FragmentContainerView: id/nav_host_fragment"		name = "androidx.navigation.fragment.NavHostFragment"		app:navGraph="@navigation/nav_graph"
-+			- navigation: 
-+				+ <navigation xmlns:android="http://schemas.android.com/apk/res/android"
-+					xmlns:app="http://schemas.android.com/apk/res-auto"
-+					android:id="@+id/nav_graph"
-+					app:startDestination="@id/profile">
-+					<fragment
-+						android:id="@+id/profile"
-+						android:name="com.example.ProfileFragment"
-+						android:label="Profile">
-+						<action												<!-- Action to navigate from Profile to Friends List. -->
-+							android:id="@+id/action_profile_to_friendslist"			<-- navigate: 
-+							app:destination="@id/friendslist" />
-+					</fragment>
-+					<fragment
-+						android:id="@+id/friendslist"
-+						android:name="com.example.FriendsListFragment"
-+						android:label="Friends List" />
-+				</navigation>
-+			
-+			- 
-+		
-+		+ Android Studio editor: 	
-+	
-+
-+3. Destination
-+	- 3.1. Dialog:
-+		+ Compose:
-+			- dialog<Settings> { SettingsScreen() }
-+			
-+		+ Fragment:
-+			- navController.graph = navController.createGraph( startDestination = Home ) { // Add the graph to the NavController with `createGraph()`.
-+				fragment<HomeFragment, Home> { // Associate the home route with the HomeFragment.
-+					label = "Home"
-+				}
-+				dialog<SettingsFragment, Settings> { // Define the settings destination as a dialog using DialogFragment.
-+					label = "Settings"
-+				}
-+			}
-+			
-+		+ XML:
-+			- <?xml version="1.0" encoding="utf-8"?>
-+			<navigation xmlns:android="http://schemas.android.com/apk/res/android"
-+						xmlns:app="http://schemas.android.com/apk/res-auto"
-+						android:id="@+id/nav_graph">
-+				...
-+				<dialog
-+					android:id="@+id/my_dialog_fragment"
-+					android:name="androidx.navigation.myapp.MyDialogFragment">
-+					<argument android:name="myarg" android:defaultValue="@null" />
-+						<action
-+							android:id="@+id/myaction"
-+							app:destination="@+id/another_destination"/>
-+				</dialog>
-+			...
-+			</navigation>
-+		
-+
-+	- 3.2. Activity:
-+		+ Programmatically:
-+			- activity<MyRoute> {
-+				label = getString(R.string.activity_title)
-+				// custom argument types, deepLinks...
-+				activityClass = MyActivity::class 
-+			}
-+		
-+		+ XML:
-+			- <?xml version="1.0" encoding="utf-8"?>
-+			<navigation xmlns:android="http://schemas.android.com/apk/res/android"
-+				xmlns:app="http://schemas.android.com/apk/res-auto"
-+				android:id="@+id/navigation_graph"
-+				app:startDestination="@id/simpleFragment">
-+
-+				<activity
-+					android:id="@+id/localDestinationActivity"
-+					android:label="@string/localActivityTitle"
-+					
-+					// = startActivity(Intent(context, DestinationActivity::class.java))
-+					android:name="com.example.android.navigation.activity.DestinationActivity"
-+					app:targetPackage="com.example.android.another.app" 							// using for owner app or another app
-+					//
-+					
-+					// if activity has intent-filter: action, data
-+					app:action="android.intent.action.VIEW"
-+					app:data="https://example.com"
-+					//
-+					
-+					// Dynamic argument for data
-+					app:dataPattern="https://example.com?userId={userId}"							<-- set argument: navController.navigate( R.id.localDestinationActivity, bundleOf("userId" to "someUser") )
-+					<argument
-+						android:name="userId"
-+						app:argType="string" />
-+					//
-+				/>
-+			</navigation>
-+	
-+	- 3.3. Custom Destination: add new Navigator to NavController --> using getNavigatorProvider().addNavigator(navigator)
-+		+ val customNavigator = CustomNavigator()			-->			navController.navigatorProvider += customNavigator
-+		+ unary plus operator: 	+navigatorProvider[CustomNavigator::class].createDestination().apply { route = Graph.CustomDestination.route }
-+		+ add:					val customDestination = navigatorProvider[CustomNavigator::class].createDestination().apply { route = Graph.CustomDestination.route }
-+								addDestination(customDestination)
-+								
-+		+ destination arguments: need @Serializable
-+			- custom types with NavType: https://developer.android.com/guide/navigation/design/kotlin-dsl?hl=en
-+		
-+
-+4. Nested graph:					https://developer.android.com/guide/navigation/design/nested-graphs?hl=vi
-+	- Game's routes flow: 			Start -> Register -> 						Match -> InGame (play game) -> ResultWinner/ GameOver -> Match
-+	- Create nested graph:			Start -> Register -> Game(Nested graph) ->	Match -> InGame (play game) -> ResultWinner/ GameOver -> Match
-+	- Code: NavHost(navController, startDestination = Start) {
-+				composable<Start>, composable<Register>, navigation<Game>(startDestination = Match) { composable<Match>, composable<InGame>, composable<ResultWinner>, composable<GameOver> }
-+			}
-+	- XML:
-+		+ <navigation> 
-+			<navigation id=action_mainFragment_to_sendMoneyGraph>  			<-- view.findNavController().navigate(R.id.action_mainFragment_to_sendMoneyGraph)
-+				<fragment /> 
-+			</navigation>
-+		</navigation>
-+		
-+		+ <include>: same include layout
-+		
-+5. Deep links:
-+	- explicit: NavDeepLinkBuilder / NavController.createDeepLink()  --> the task back stack is cleared and replaced with the deep link destination, include the start destination of nested-graph
-+		+ pendingIntent = NavDeepLinkBuilder(context).setGraph(R.navigation.nav_graph).setDestination(R.id.android).setArguments(args).createPendingIntent()
-+			.setComponentName(DestinationActivity::class.java / ComponentName)  // if NavHost is in other activity
-+		
-+	- implicit: ordered URI > action > mime
-+		+ declare: 		<deepLink app:uri="http://www.example.com/users/{id}" app:action="" app:mimeType="" />
-+		+ manifest:		add tag <nav-graph android:value="@navigation/nav_graph" /> to activity that handle deepLink	
-+			-> When building project, the Navigation component replaces the <nav-graph> element with generated <intent-filter> elements to match all of the deep links in the navigation graph.
-+		+ state of backstack: implicit Intent launched
-+			- with  Intent.FLAG_ACTIVITY_NEW_TASK:		the task back stack is cleared and replaced with the deep link destination, include the start destination of nested-graph 	
-+				--> Back button: navigate back up the navigation stack just as though they entered your app from its entry point
-+			- without  Intent.FLAG_ACTIVITY_NEW_TASK:	remain on the task stack of the previous app where the implicit deep link was triggered 									
-+				--> Back button: back to previous app 
-+				--> Up button: starts your app's task on the hierarchical parent destination within your navigation graph.
-+		
-+		+ deepLink<Route> { basePath = "" 	action = "" 	mimeType="" }
-+	+ handle deepLinks: with launchMode
-+		- standard (default): 	handleDeepLink() --> any explicit or implicit deep links within the Intent
-+		- singleTop:			handleDeepLink() <-- onNewIntent()
-+		
-+		
-+6. Type safety
-+	- @Serializable object Route	/ 	@Serializable data class Route(params: String)
-+
-+
-+7. Encapsulate navigation: extend NavGraphBuilder, NavController
-+	- SubNavigation.kt:		
-+		+ destination:		
-+			- fun NavGraphBuilder.contactsDestination()  		{ composable<Contacts> { ContactsScreen( /* ... */ ) } }
-+			- fun NavGraphBuilder.contactDetailsDestination() 	{ composable<ContactDetails> { navBackStackEntry -> ContactDetailsScreen(contact = navBackStackEntry.toRoute<Contacts>()) } }
-+		+ navigate:			
-+			- fun NavController.navigateToContactDetails(id: String) { navigate(route = ContactDetails(id = id) }
-+			
-+	- AppScreen.kt:	fun MyApp() {
-+					  ...
-+					  NavHost(navController, startDestination = Contacts) {
-+						contactsDestination(onNavigateToContactDetails = { contactId -> navController.navigateToContactDetails(id = contactId) }) 
-+						contactDetailsDestination()
-+						...
-+					  }
-+					}
-+	- Using internal: to keep screens and route types private
-+		
-+
-+8. Global actions:
-+	- Safe Args:
-+		+ XML: <fragment> 	<action android:id="@+id/action_fragmentA_to_fragmentB" app:destination="@id/fragmentB" /> 		</fragment>
-+		+ Code: navController.navigate(R.id.action_fragmentA_to_fragmentB)
-+		
-+		+ Global actions:
-+			
-+		
-+	- Animations:
-+		+ 
-+
-+
-+9. Using NavGraph
-+	- 9.1. Navigate:
-+		+ Composable: 					navController.navigate(route = FriendsList)
-+		+ using ID:						view.findNavController().navigate(R.id.viewTransactionsAction)
-+		+ using NavDeepLinkRequest: 	val request = NavDeepLinkRequest.Builder.fromUri("android-app://androidx.navigation.app/profile".toUri()).build()	-->		findNavController().navigate(request)
-+	
-+	- 9.2. Navigate with options: NavOptions
-+		+ XML:
-+		+ Code:	findNavController().navigate(
-+					R.id.action_fragmentOne_to_fragmentTwo,  // or deepLinkUri
-+					null, 
-+					navOptions { // Use the Kotlin DSL for building NavOptions
-+						anim {
-+							enter = android.R.animator.fade_in
-+							exit = android.R.animator.fade_out
-+							popEnter = / popExit = / popUpTo / popUpToInclusive
-+						}
-+					}
-+				)
-+		+ 
-+	
-+	- 9.3. Safe-args:
-+		+ gradle:	android.useAndroidX=true
-+			- buildscript -> dependencies: classpath("androidx.navigation:navigation-safe-args-gradle-plugin:$nav_version")
-+			- plugins { id("androidx.navigation.safeargs") id("androidx.navigation.safeargs.kotlin") }
-+			
-+		+ Gen class: SpecifyAmountFragment -> SpecifyAmountFragmentDirections
-+		+ Using:
-+			- override fun onClick(v: View) {
-+				val amount: Float = ...
-+				val action = SpecifyAmountFragmentDirections.actionSpecifyAmountFragmentToConfirmationFragment(amount)
-+				v.findNavController().navigate(action)
-+			}
-+			
-+	- 9.4. Pass data between destinations:
-+		+ way 1: using ViewModel for large data
-+		+ way 2: using <argument>
-+			- <action android:id="@+id/startMyFragment"
-+				app:destination="@+id/myFragment">
-+				<argument
-+					android:name="myArg"
-+					app:argType="integer"				// argType: primitive data, Parcelable, Serializable, Enum, resources (
-+					android:defaultValue="1" />			// @null
-+			</action>
-+		+ way 3: using Safe-args (only using gradle)
-+			- Send: override fun onClick(v: View) {
-+					   val amountTv: EditText = view!!.findViewById(R.id.editTextAmount)
-+					   val amount = amountTv.text.toString().toInt()
-+					   val action = SpecifyAmountFragmentDirections.confirmationAction(amount)
-+					   v.findNavController().navigate(action)
-+					}
-+			+ Recv:	val args: ConfirmationFragmentArgs by navArgs()  						// = getArguments() 
-+					override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-+						val tv: TextView = view.findViewById(R.id.textViewAmount)
-+						val amount = args.amount
-+						tv.text = amount.toString()
-+					}
-+					
-+			+ using Safe-args global action:
-+				
-+		+ way 4: using Bundle
-+			- Send: view.findNavController().navigate(R.id.confirmationAction, bundle)			// val bundle = bundleOf("amount" to amount)
-+			- Recv:	arguments?.getString("amount")												// = getArguments() 
-+		
-+		+ way 5: Pass data to the start destination
-+			- Send using NavHost: 			NavHostFragment.create(R.navigation.graph, args = bundle)
-+			- Send using NavController:		navController.setGraph(R.navigation.graph, args = bundle)	/	navController.setGraph(navGraph, args)  (XML can not using attribute app:nav-graph  -> call .setGraph() -> call setGraph() 2 times)
-+			- Recv: 						Fragment.getArguments()
-+		
-+		+ Note about ProGuard:  shrinking code = true
-+			- using @Keep / -keepnames  for Parcelable, Serializable, Enum: to prevent being obfuscated as part of the minification process.
-+			- @Keep class ParcelableArg : Parcelable { ... }	/	-keepnames class com.path.to.your.ParcelableArg (proguard-rules.pro)
-+		
-+	- 9.5. Animate transitions between destinations:
-+		+ NavOptions: 			enter / exit / popEnter = / popExit = / popUpTo / popUpToInclusive
-+		+ Navigator.Extras: 	FragmentNavigator.Extras /	ActivityNavigator.Extras 
-+		
-+		+ Fragment:  	FragmentNavigator.Extras											<fragment> <action android:id 	app:destination		app:enterAnim/exitAnim/popEnterAnim/popExitAnim/popUpTo/popUpToInclusive /> </fragment>
-+			- val extras = FragmentNavigatorExtras(view1 to "hero_image")
-+				view.findNavController().navigate(
-+					R.id.confirmationAction,
-+					null, // Bundle of args
-+					null, // NavOptions
-+					extras)
-+			
-+			- Animation & Animator
-+			
-+		+ Activity:		ActivityNavigator.Extras, ActivityOptionsCompat/ActivityOptions
-+			- val options = ActivityOptionsCompat.makeSceneTransitionAnimation(activity, Pair.create(view1, "hero_image"))
-+				val extras = ActivityNavigatorExtras(options)
-+				view.findNavController().navigate(
-+					R.id.details,
-+					null, // Bundle of args
-+					null, // NavOptions
-+					extras)
-+			
-+			- Apply pop animations to activity transitions: finish() -> ActivityNavigator.applyPopAnimationsToPendingTransition(this)
-+			
-+			- startActivity(intent, ActivityOptions.makeSceneTransitionAnimation(this).toBundle())
-+			- Activity.finishAfterTransition()
-+		
-+	- 9.6. Conditional navigate:
-+		+ 
-+		
-+		
-+// Animation & Animator: 		https://developer.android.com/guide/topics/resources/animation-resource?hl=vi
-+	- Animation types: rotate, stretch, fade, slide, move, scale
-+		+ fade: 	<alpha
-+		+ slide:	<translate
-+	
-+	- Transition types: enter & exit
-+		+ fade:			
-+		+ slide:		
-+		+ explode:		
-+		
-+	- Effects:
-+		+ enter:
-+		+ exit:
-+		+ shared element transition:
-+	
-+	- Define xml: 
-+		+ Animation:		res/anim 			-> res/anim/fade_out.xml		res/anim/slide_in.xml
-+		+ Transitions:		res/transition		-> res/transition/fade.xml		res/transition/slide_right.xml
-+	
-+	- Using:
-+		+  Fragment Animation: FragmentTransaction.setCustomAnimations(							--> supportFragmentManager.commit {
-+											R.anim.slide_in, // enter							setCustomAnimations(enter, exit, popEnter, popExit)
-+											R.anim.fade_out, // exit							replace()
-+											R.anim.fade_in, // popEnter							addToBackStack(null)
-+											R.anim.slide_out // popExit)					 }
-+
-+
-+		+  Fragment Transition: TransitionInflater
-+				- class FragmentA : Fragment() {
-+					override fun onCreate(savedInstanceState: Bundle?) {
-+						super.onCreate(savedInstanceState)
-+						val inflater = TransitionInflater.from(requireContext())
-+						enterTransition = inflater.inflateTransition(R.transition.slide_right)			-->	setEnterTransition()
-+						exitTransition = inflater.inflateTransition(R.transition.fade)					-->	setExitTransition()
-+					}
-+				}
-+				
-+				- ViewCompat.setTransitionName(view, tag)		~ android:transitionName				--> supportFragmentManager.commit { addSharedElement(itemImageView, “hero_image”) }
-+				
-+		
-+		+ 
-+			
-+
-+
-+
-+		
-+		
-diff --git a/3.AppArchitecture.txt b/3.AppArchitecture.txt
-new file mode 100644
-index 0000000..f462d7d
---- /dev/null
-+++ b/3.AppArchitecture.txt
-@@ -0,0 +1,8 @@
-+4. App Architecture
-+	- 4.1. Overview
-+	- 4.2. Modularization
-+	- 4.3. Architecture Components
-+	- 4.4. App entry points
-+	- 4.5. App Naigation
-+	- 4.6. Dependencies Injection
-+	- 4.7. App Startup
-\ No newline at end of file
-diff --git a/4.AndroidAppElement.txt b/4.AndroidAppElement.txt
-new file mode 100644
-index 0000000..4e16802
---- /dev/null
-+++ b/4.AndroidAppElement.txt
-@@ -0,0 +1,56 @@
-+// https://developer.android.com/develop/ui/views/animations/transitions/start-activity#start-with-element
-+
-+1. App Layout
-+	- Responsive layout
-+	- Dynamic list
-+	- Activity embeding
-+	- Window size classes
-+	- Support Multi-window
-+	- improve layout performance
-+	- custom view
-+	- window insets & cutouts
-+	- web-based content
-+
-+2. Apply theme
-+	- Dynamic color
-+	- Material Design
-+	- Implement dark theme
-+	- shadows & clip
-+	
-+3. Add components: core components, app bar, settings, Android search
-+
-+4. Text & Emoji
-+	- download font
-+	- add emoji
-+	- autosize text view
-+	
-+5. Display graphics & video
-+	- static images
-+	- media playback controls
-+	- video using PiP (picture-in-picture)
-+	
-+	
-+6. Animations & Transitions
-+	- Motion Layout
-+	- Activity vs animation
-+	- fragments slide with Viewpager
-+
-+7. Touch & Input
-+	- spelling & checker
-+	- ...
-+	
-+8. App Notification
-+	- permission
-+	- expandable notification
-+	- notification chanel / group
-+	- conversations
-+	- pop-up messages
-+
-+9. App launch
-+	- adaptive launcher icon
-+	- splash screen
-+	- app shortcuts
-+	
-+10. add app content to home screen or launcher
-+
-+11. Backward-compatible UIs
-\ No newline at end of file
-diff --git a/5.AndroidBuild.txt b/5.AndroidBuild.txt
-new file mode 100644
-index 0000000..1630e3d
---- /dev/null
-+++ b/5.AndroidBuild.txt
-@@ -0,0 +1 @@
-+https://developer.android.com/build?hl=vi
-\ No newline at end of file
-diff --git a/6.JetpackCompose.txt b/6.JetpackCompose.txt
-new file mode 100644
-index 0000000..8104605
---- /dev/null
-+++ b/6.JetpackCompose.txt
-@@ -0,0 +1,190 @@
-+/////// Ưu điểm của Jetpack Compose
-+- Dễ học: 			Jetpack Compose dễ học hơn so với các phương pháp xây dựng giao diện người dùng truyền thống cho Android.
-+- Tăng năng suất: 	Jetpack Compose giúp bạn tăng năng suất bằng cách cho phép bạn xây dựng giao diện người dùng nhanh hơn và dễ dàng hơn.
-+- Hiệu suất cao: 	Jetpack Compose được tối ưu hóa cho hiệu suất cao, qua đó, giúp ứng dụng của bạn chạy mượt mà hơn.
-+
-+/////// So sánh chi tiết sử dụng Jetpack Compose và không sử dụng Jetpack Compose trong lập trình Android
-+1. Hiệu suất
-+	- Khi sử dụng Jetpack Compose: 
-+		+ Hiệu suất cao do được tối ưu hóa cho việc sử dụng GPU và CPU.
-+		+ Giảm thiểu việc sử dụng bộ nhớ và tài nguyên hệ thống.
-+		+ Mang lại trải nghiệm người dùng mượt mà và nhạy bén.
-+	- Không sử dụng Jetpack Compose
-+		+ Có thể thấp hơn do sử dụng các phương thức truyền thống như XML và ViewGroups.
-+		+ Tiêu thụ nhiều bộ nhớ và tài nguyên hệ thống hơn.
-+		+ Trải nghiệm người dùng có thể không mượt mà và nhạy bén như khi sử dụng Jetpack Compose.
-+
-+2. Tính linh hoạt
-+	- Sử dụng Jetpack Compose: 
-+		+ Cung cấp API trực quan và dễ sử dụng để xây dựng giao diện người dùng.
-+		+ Hỗ trợ nhiều thành phần UI có sẵn và khả năng tạo thành phần UI tùy chỉnh.
-+		+ Cho phép tạo giao diện người dùng phức tạp một cách dễ dàng.
-+	- Không sử dụng Jetpack Compose:
-+		+ Việc xây dựng giao diện người dùng có thể phức tạp và tốn thời gian hơn.
-+		+ Khả năng tùy chỉnh giao diện người dùng bị hạn chế bởi các thành phần UI có sẵn trong XML.
-+		+ Khó khăn trong việc tạo giao diện người dùng phức tạp.
-+
-+3. Khả năng bảo trì
-+	- Sử dụng Jetpack Compose:
-+		+ Code dễ đọc và dễ hiểu hơn do sử dụng cú pháp khai báo.
-+		+ Dễ dàng sửa lỗi và bảo trì giao diện người dùng.
-+		+ Giúp giảm thiểu code boilerplate.
-+	- Không sử dụng Jetpack Compose:
-+		+ Code có thể khó đọc và khó hiểu hơn do sử dụng XML và Java.
-+		+ Việc sửa lỗi và bảo trì giao diện người dùng có thể khó khăn hơn.
-+		+ Code có thể chứa nhiều boilerplate.
-+
-+4. Khả năng tương thích
-+	- Sử dụng Jetpack Compose:
-+		+ Hỗ trợ đa nền tảng (Android, iOS, Web) với Kotlin Multi Platform Mobile (KMM).
-+		+ Cho phép chia sẻ code giao diện người dùng giữa các nền tảng.
-+	- Không sử dụng Jetpack Compose:
-+		+ Việc chia sẻ code giao diện người dùng giữa các nền tảng khó khăn hơn.
-+		+ Cần viết code riêng cho từng nền tảng
-+		
-+////////// SUMMARY ////////////////////////////////////////////////////
-+1. 
-+
-+////////// JetPackCompose ////////////////////////////////////////////////////
-+1. 
-+
-+
-+3. Managing State
-+	- Composition: 
-+		+ Init composition -> state changed -> recomposition
-+	
-+	- remember:	để lưu trữ đối tượng trong bộ nhớ		-> mutableStateOf & immutableStateOf
-+	
-+	- mutableStateOf: tạo ra MutableState<T> có thể quan sát. Đây là một loại đối tượng có thể quan sát được tích hợp với thời gian chạy Compose.
-+		+ interface MutableState<T> : State<T> { override var value: T }
-+		+ 3 way to declare MutableState:
-+			- val mutableState 			= 	remember { mutableStateOf(default) }
-+			- var value 				by 	remember { mutableStateOf(default) }
-+			- val (value, setValue) 	= 	remember { mutableStateOf(default) }
-+			
-+			+ by: delegate -> require: 	import androidx.compose.runtime.getValue						import androidx.compose.runtime.setValue
-+	
-+	- rememberSaveable:
-+		+ remember: 		save state in mem for recomposition, but not keep value if channge configuration 
-+		+ rememberSaveable:	auto save state to Bundle
-+			- rememberSaveable sẽ không giữ lại trạng thái nếu người dùng đóng hoàn toàn activity. 
-+				Ví dụ: tính năng này không giữ lại trạng thái nếu người dùng vuốt activity hiện tại lên từ màn hình gần đây.
-+		
-+		+ Note: using ArrayList<T> hoặc mutableListOf() làm trạng thái trong Compose, người dùng sẽ thấy dữ liệu không chính xác hoặc lỗi thời trong ứng dụng của bạn. 
-+			Khi thay đổi, các đối tượng có thể thay đổi và không thể quan sát (chẳng hạn như ArrayList hoặc một lớp dữ liệu có thể thay đổi) sẽ không kích hoạt việc tái 
-+			cấu trúc và Compose sẽ không quan sát được những đối tượng này.
-+			
-+	- Other states: convert object to State<T> để các thành phần kết hợp có thể tự động kết hợp lại khi trạng thái thay đổi.
-+		+ Flow: 		collectAsState()						// có sẵn trong compose-runtime, using cho mã không phụ thuộc vào nền tảng thay vì collectAsStateWithLifecycle, vốn chỉ dành cho Android.
-+		+ Flow: 		collectAsStateWithLifecycle()			// need:		implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")	// FLow -> State, same collectAsState()
-+		
-+		+ LiveData: 	observeAsState()						// need:		implementation("androidx.compose.runtime:runtime-livedata:1.7.5")		// LiveData -> State: LiveData<T>.observeAsState()
-+		+ RxJava2/3: 	subscribeAsState()						// need:		implementation("androidx.compose.runtime:runtime-rxjava2/3:1.7.5")		//  Single, Observable, Completable -> State
-+		
-+		
-+	- State full:	using remember in @Composable																	@Composable <- -> View (Content)		// State ->, Event <-
-+	
-+	- State less:	~State hoisting: chuyển trạng thái lên trên -> save state in ViewModel		ViewModel 	<- -> 	@Composable <- -> View (Content)		// State ->, Event <-
-+		+ Mô hình chung để di chuyển trạng thái lên trên trong Jetpack Compose là thay thế biến trạng thái bằng 2 tham số:
-+		+ value: T: giá trị hiện tại để hiển thị
-+		+ onValueChange: (T) -> Unit: một sự kiện yêu cầu thay đổi giá trị này, trong đó T là giá trị mới được đề xuất
-+		+ Ưu điểm:
-+			- Single source of truth: 		Bằng cách di chuyển trạng thái thay vì sao chép, chúng tôi đảm bảo rằng chỉ có một nguồn thông tin duy nhất. Điều này giúp tránh các lỗi.
-+			- Được đóng gói (encapsulated): Chỉ các thành phần kết hợp có trạng thái mới có thể sửa đổi trạng thái của chúng. Nó có tính nội bộ hoàn toàn.
-+			- Có thể chia sẻ (shareable): 	Bạn có thể chia sẻ trạng thái được di chuyển lên trên với nhiều thành phần kết hợp. Nếu bạn muốn đọc name trong một thành phần kết hợp khác, việc di chuyển trạng thái lên trên sẽ cho phép bạn làm việc đó.
-+			- Có thể chắn (interceptable): 	phương thức gọi đến các thành phần kết hợp không trạng thái có thể quyết định bỏ qua hoặc sửa đổi các sự kiện trước khi thay đổi trạng thái.
-+			- Được tách riêng (decoupled): 	trạng thái của các thành phần kết hợp không có trạng thái có thể được lưu trữ ở bất cứ đâu. Ví dụ: bạn hiện có thể di chuyển name sang ViewModel.
-+			
-+		+ Vị trí chuyển state: https://developer.android.com/develop/ui/compose/state-hoisting?hl=vi#plain-state
-+			
-+	- Restoring state in Compose:
-+		+ remember:				
-+		+ rememberSaveable:		save state to bundle		<onConfigChanged|localizeChanged|darkMode>		remember
-+		+ not save to Bundle:	using with rememberSaveable
-+			- Parcelize:		@Parcelize	data class City(val name: String, val country: String) : Parcelable		// The object becomes parcelable, and can be bundled.
-+								var selectedCity = rememberSaveable { mutableStateOf(City("Madrid", "Spain")) }
-+								
-+			- MapSaver:			val CitySaver = run {																// define rule for converting an object into a set of values that the system can save to the Bundle
-+									val nameKey = "Name"
-+									val countryKey = "Country"
-+									mapSaver(
-+										save = { mapOf(nameKey to it.name, countryKey to it.country) },
-+										restore = { City(it[nameKey] as String, it[countryKey] as String) }
-+									)
++					+ Token for user jenkins:		Account -> Security -> API token: add new token (n├¬n tß║ío user ri├¬ng cho project)
++				- Gitlab:
++					+ add host for jenkins domain jenkins.devops.tech
++					+ Allow Webhooks:	Admin Setting -> Network -> Outbound request:  Allow requests to the local network from webhooks and integrations -> Save
++					+ Add Webhooks:		Project Setting -> Webhooks) add Webhooks from Jenkins info
++						- URL: format [http://<user jenkins>:<token user jenkins>@<domain jenkins>/project/<path of project on jenkins>]	// http://user:token@jenkins.devops.tech/project/Action-in-lab/shoeshop
++						- Add -> Test event: Http 200 = success
++						
++					+ Add Jenkinsfile for project: groovy syntax
++						pipeline {
++							agent {
++								label 'lab-server-label'
++							}
++							environment {
++								appUser = "shoeshop"
++								appName =  "shoe-ShoppingCart"
++								appVersion = "0.0.1-SNAPSHOT"
++								appType = "jar"
++								processName = "${appName}-${appVersion}.${appType}"
++								folderDeploy = "/datas/${appUser}"
++								buildScript = "mvn clean install -DskipTests=true"
++							}
++							stages {
++								stage('build') {
++									steps {
++										sh(script: """ whoami;pwd;ls -la;${buildScript} """, label: "build-job with maven")
++									}
 +								}
-+								var selectedCity = rememberSaveable(stateSaver = CitySaver) { mutableStateOf(City("Madrid", "Spain")) }
-+								
-+			- ListSaver:		val CitySaver = listSaver<City, Any>(												// To avoid needing to define the keys for the map
-+									save = { listOf(it.name, it.country) },
-+									restore = { City(it[0] as String, it[1] as String) }
-+								)
-+								var selectedCity = rememberSaveable(stateSaver = CitySaver) { mutableStateOf(City("Madrid", "Spain")) }
-+
-+	- State holders in Compose:  ~ hoisted state object: manage logic and state of composables.
-+		+ Holders business logic:	ViewModel, có thể tích hơp với Navigation -> uiState
-+		+ Holders UI logic:			remember, rememberSaveable[ rememberScaffoldState() / rememberLazyListState() / rememberNavController() ] 		- do lib cung cấp
-+									và các object state khác chỉ liên quan đến UI: navController, WindowSizeClass, ...								- custome state 		// https://developer.android.com/topic/architecture/ui-layer/stateholders?hl=vi#choose_between_a_viewmodel_and_plain_class_for_a_state_holder
-+		
-+	- Remember state with key: value only changed when key changed, if key is not changed, not need calculate again for state
-+		+ remember(key1 = avatarRes) / remember(windowSizeClass):		key = avatarRes, windowSizeClass
-+		
-+	- Lifecycle: Vòng đời của một thành phần kết hợp được xác định bằng những sự kiện sau: nhập thành phần Compose, kết hợp lại 0 lần trở lên và rời khỏi thành phần Compose.
-+		+ Quá trình kết hợp lại thường được kích hoạt khi có thay đổi đối với đối tượng State<T>. Compose sẽ theo dõi quá trình thay đổi này, đồng thời chạy tất cả thành phần kết hợp 
-+			trong thành phần Compose có khả năng đọc State<T> và bất kỳ thành phần kết hợp quá trình này gọi mà không thể bỏ qua.
-+		
-+		- Skip recomposition:	
-+			+ @NonRestartableComposable hoặc @NonSkippableComposable
-+			+  Strong Skipping
-+			+ @Stable
-+	
-+	
-+	- save state off UI: reboot, system kill, recent
-+		+ 1. Viewmodel
-+		+ 2. Save state:
-+			+ Jetpack Compose: rememberSaveable.
-+			+ Khung hiển thị (View): API onSaveInstanceState().
-+			+ ViewModel: SavedStateHandle.
-+		3. Local storage: db, share preference
-+		4. SavedStateRegistry:	Activity, Fragment													// https://developer.android.com/topic/libraries/architecture/saving-states?hl=vi#onsaveinstancestate
-+		
-+
-+4. App Layout
-+	- Flow Layout:
-+
-+
-+5. View
-+	+ TopAppBar:	ContainerHeight default = 64.dp, is set by TopAppBarTokens (internal object)
-+		- TabLayout: val selectedTabId 	- 	TabRow(tabs = { Tab(icon=) Tab(icon=) } )
-+		
-+///////////////
-+LaunchedEffect
-+WindowSizeClass
-+derivedStateOf:		https://medium.com/androiddevelopers/jetpack-compose-when-should-i-use-derivedstateof-63ce7954c11b
-+lazyListState
-+@Stable:			https://medium.com/androiddevelopers/jetpack-compose-stability-explained-79c10db270c8		LazyListState
-+snapshotFlow 
-+
-+internal object
-+
-+Bạn có thể sử dụng từ khoá by để xác định count dưới dạng một var. Việc thêm lệnh nhập getter và setter của phần tử uỷ quyền cho phép chúng ta đọc và thay đổi count 
-+	một cách gián tiếp mà không cần tham chiếu rõ ràng đến thuộc tính value của MutableState mọi lần.
-+
-+// keyboard show/hide:  android:windowSoftInputMode="adjustResize" & Modifier.imePadding()
-+
-+@HiltViewModel
-+class AuthorViewModel @Inject constructor(
-+    savedStateHandle: SavedStateHandle,
-+    private val authorsRepository: AuthorsRepository,
-+    newsRepository: NewsRepository
-+) : ViewModel() {
-+
-+    val uiState: StateFlow<AuthorScreenUiState> = …
-+
-+    // Business logic
-+    fun followAuthor(followed: Boolean) {
-+      …
-+    }
-+}
-+
-+		
-+		
-\ No newline at end of file
-diff --git a/7.ViewModel.txt b/7.ViewModel.txt
-new file mode 100644
-index 0000000..0b93a1f
---- /dev/null
-+++ b/7.ViewModel.txt
-@@ -0,0 +1,142 @@
-+// Summary:				https://developer.android.com/topic/libraries/architecture/viewmodel?hl=vi
-+1. Lifecycle
-+
-+2. ViewModel:
-+	- ViewModel -> ViewModelStoreOwner -> ViewModelStore <-- ViewModelProvider
-+	- ViewModelProvider.Factory: pass params to ViewModel
-+	- viewModelScope: ~ CoroutineScope & Closeable
-+	
-+	- MutableStateFlow(UiState).update { StateFlơ<UiState> -> copy }
-+	- observer: uiState.collect {}, uiState.observer()
-+
-+
-+
-+1. Lifecycle
-+	1.1. Class
-+		- Lifecycle
-+		
-+		- LifecycleOwner:												-> Activity implement LifecycleOwner
-+			+ public val lifecycle: Lifecycle
-+			+ LifecycleOwner.lifecycleScope = lifecycle.coroutineScope
-+			
-+
-+2. ViewModel
-+	2.0. Ưu điểm: Ưu điểm chính của lớp này là khả năng lưu trạng thái vào bộ nhớ đệm và duy trì trạng thái đó khi có các thay đổi về cấu hình. 
-+					Điều này có nghĩa là giao diện người dùng không phải tìm nạp lại dữ liệu khi di chuyển giữa các hoạt động hoặc áp dụng các thay đổi về cấu hình, chẳng hạn như khi xoay màn hình.
-+		- caches sate:
-+		- persists state through configuration changes:
-+		
-+		- Lớp này cho phép bạn duy trì trạng thái giao diện người dùng.
-+		- Lớp này cung cấp quyền truy cập vào business logic.
-+
-+	2.1. Class
-+
-+		- ViewModel: 
-+			+ class SampleViewModel: ViewModel() {}			// viewModel(modelClass) -> call ViewModelStoreOwner
-+			+ methods:
-+				- state:	private val _uiState: MutableStateFlow(UiState()) 
-+							-> val uiState: SateFlow<UiState> = _uiState.asStateFlow() 
-+							-> _uiState.update { currentState -> currentState.copy(params) }
-+				- cleared():
-+				
-+			+ data class UiState(val params)
-+		
-+		
-+		- ViewModelStoreOwner: 						-> Activity implement ViewModelStoreOwner;  // ComponentActivity, Fragment và NavBackStackEntry
-+			+ val viewModelStore: ViewModelStore
-+		
-+		- ViewModelStore:
-+			+ val map = mutableMapOf<String, ViewModel>()	// map(className, ViewModel)
-+			
-+		- ViewModelProvider: 
-+			+ Access ViewModel -> ViewModelProvider(context, factory).get(SampleViewModel::class.java)  <-- create by ViewModelLazy <-- ComponentActivity.viewModels()
-+			
-+			+ ViewModelProvider.Factory: class SampleViewModel(name: String) : ViewModel() {} -> cần truyền tham số cho ViewModel thì dùng Factory
-+				- class SampleViewModelFactory (val arg: String): ViewModelProvider.Factory {
-+					override fun <T : ViewModel?> create(modelClass: Class<T>): T {
-+						return   modelClass.getConstructor(String::class.java).newInstance(arg)
-+					}
-+				}
-+				
-+		
-+	2.2. Lifecycle:
-+		+ Activity: 	ComponentActivity		-> cleared when activity is destroyed(finished)
-+		+ Fragment:		Fragment				-> cleared when fragment is detached
-+		+ Composable: 	NavBackStackEntry		-> cleared when it is popedback from stack
-+		
-+		+ when new viewModel() -> pass ViewModelStoreOwner (Navigation destination, Navigation graph, activity, fragment, ...) -> scope of ViewModel = scope of ViewModelStoreOwner.Lifecycle, 
-+				và vẫn nằm trong bộ nhớ cho đến khi ViewModelStoreOwner biến mất vĩnh viễn.
-+		
-+	2.3. Deploy
-+		+ Observer: 
-+			- way 1: viewModel.uiState.observer(viewLifecycleOwner, Observer<UiState>) { uiState -> // handle }
-+			- way 2: viewModel.uiState.collect { }
-+			
-+		+ onCleared(): dọn dẹp
-+			
-+		+ Shared viewmodel from activity/fragments & fragments: by using ViewModel with scope Activity for Activity & fragments
-+			- get ViewModel scope Activity from fragment: viewModel = activity?.let{ ViewModelProviders.of(it)[SharedViewModel::class.java] } ?: throw Exception("Activity is null")
-+			
-+		+ viewModelScope: là một CoroutineScope tích hợp sẵn tự động theo vòng đời của ViewModel
-+			- change viewModelScope: chỉ nhận CoroutineScope trong hàm constructor, Khi ViewModelStoreOwner xoá ViewModel vào lúc kết thúc vòng đời, ViewModel cũng sẽ huỷ CoroutineScope
-+			
-+				+ class MyViewModel(private val coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)) : ViewModel() {
-+					// Other ViewModel logic ...
-+
-+					override fun onCleared() {
-+						coroutineScope.cancel()
-+					}
-+				}
-+				
-+			- from Lifecycle ver 2.5: có thể truyền một hoặc nhiều đối tượng Closeable đến hàm khởi tạo của ViewModel. Closeable sẽ tự động đóng khi thực thể ViewModel bị xoá.
-+			
-+				+ class CloseableCoroutineScope(context: CoroutineContext = SupervisorJob() + Dispatchers.Main.immediate) : Closeable, CoroutineScope {
-+					override val coroutineContext: CoroutineContext = context
-+					override fun close() {
-+						coroutineContext.cancel()
-+				   }
-+				}
-+				
-+				+ class MyViewModel(private val coroutineScope: CoroutineScope = CloseableCoroutineScope()) : ViewModel(coroutineScope) {
-+					// Other ViewModel logic ...
-+				}
-+			
-+		+ Jetpack Compose:
-+			- 
-+		
-+		+ Coroutine:
-+			- 
-+			
-+			
-+	2.4. ViewModel Scope:
-+		+ Each ViewModel is scoped to an object that implements the ViewModelStoreOwner interface
-+		+ Java:				
-+			- Any:			MyViewModel viewModel = new ViewModelProvider(this).get(MyViewModel.class);
-+		+ Kotlin:
-+			- Closest ViewModelStoreOwner:	
-+				+ Kotlin:	val viewModel: MyViewModel by viewModels()				// scoped to Activity, Fragment, NavBackStackEntry
-+				+ Compose:	viewModel: MyViewModel = viewModel()					// destination of a Navigation graph, the host Fragment, or the host Activity.			// need lib:  androidx.lifecycle:lifecycle-viewmodel-compose
-+				+ Hilt:		hiltViewModel()
-+				
-+			- Any ViewModelStoreOwner:
-+				+ Kotlin:	val viewModel: SharedViewModel by activityViewModels()				val viewModel: SharedViewModel by viewModels(ownerProducer = { requireParentFragment() } )
-+				+ Compose:	viewModel: SharedViewModel = viewModel(viewModelStoreOwner = (context as Fragment).requireActivity() / requireParentFragment())
-+				
-+			- scope Navigation graph:
-+				+ Kotlin:
-+					- val viewModel: SharedViewModel by navGraphViewModels(R.id.nav_graph)											// val viewModel: SharedViewModel by hiltNavGraphViewModels(R.id.nav_graph)
-+					- val viewModel: SharedViewModel by viewModels( { findNavController().getBackStackEntry(R.id.nav_graph) } )
-+				+ Compose:
-+					- composable("myScreen") { backStackEntry ->
-+						// Retrieve the NavBackStackEntry of "parentNavigationRoute"
-+						val parentEntry = remember(backStackEntry) {
-+							navController.getBackStackEntry("parentNavigationRoute")
++							}
 +						}
-+						// Get the ViewModel scoped to the `parentNavigationRoute` Nav graph
-+						val parentViewModel: SharedViewModel = viewModel(parentEntry)												// val parentViewModel: SharedViewModel = hiltViewModel(parentEntry)
-+						// ...
-+					}
++
++		
++		// 1. kß║┐t nß╗æi jenkins-server ─æß║┐n lab-server: 		jenkins Agent
++		// 2. kß║┐t nß╗æi jenkins-server ─æß║┐n gitlab-server: 	plugin-gitlab & BlueOcen
++		
++	1.6. Mornitoring
++
++
+ 
+-https://www.baeldung.com/linux/virtualbox-ping-guest-machines
++// https://www.baeldung.com/linux/virtualbox-ping-guest-machines
+ 
+ Windows 11 is not listing a bridged adapter for VirtualBox
+ Since I've ended up on this old topic from Windows 11 issues, I'm sure others also will, so I wanted to provide an up to date answer for those experiencing this on Windows 11.
+diff --git a/DevopsDoc/IpPortServer.txt b/DevopsDoc/IpPortServer.txt
+index 137548c..4d66988 100644
+--- a/DevopsDoc/IpPortServer.txt
++++ b/DevopsDoc/IpPortServer.txt
+@@ -29,4 +29,59 @@ desktop					192.168.56.40
+ 						-> docker: contains docker image --> push image to registry
+ 
+ 3. Server (dev-server):	deploy web, app
+-						-> docker: registry-server
+\ No newline at end of file
++						-> docker: registry-server
+
++
++
++//////////////////////////////////////////////////////////////
++	- docker registry:
++		+
++		+
++		+ private registry: self authentication
++			- install openssl:				apt install openssl -y			mkdir -p /tools/docker/registry/certs & data
++			- gen key:						cd /tools/docker/registry/		openssl req -newkey rsa:4096 -nodes -sha256 -keyout certs/domain.key -subj "/CN=192.168.1.10" -addext "subjectAltName=DNS:192.168.1.10,IP:192.168.1.10" -x509 -days 3650 -out certs/domain.crt
++			- write docker-compose.yml:		same above of docker-compose	-> run: docker-compose up -d		// 	before: 	cd /tools/docker/registry/		nano docker-compose.yml
++			- copy cert to any client:		mkdir -p /etc/docker/certs.d/192.168.56.10:5000						cp 	/tools/docker/registry/certs/domain.crt 	/etc/docker/certs.d/192.168.56.10:5000/ca.crt
++			- check:
++				+ docker-compose ps						// list docker-compose running
++				+ 192.168.56.10:5000/v2/_catalog:		// list images on registry								// registry-domain/v2/_catalog ~ registry.devops.com/v2/_catalog
++				+ 192.168.56.10:5000/v2/image/tag/list:	// list tags of image on registry
 +			
-+				+ 
 +			
 +			
++//////////////////////////////////////////////////////////////
++- M├┤ h├¼nh CI/CD:
++	- TCB:
++		+ Team: 		Sec - Vault			Ops - System		 Dev - Code
++		+ Tool CI/CD:	jenkins - ansible
++		+ Repo:			gitlab
++		+ 1 t├ái khoß║ún ─æß║╖c quyß╗ün vß╗¢i full quyß╗ün t├íc ─æß╗Öng l├¬n server, tkdq nhß║¡p use/path l├¬n vault path, pass chia 2 nß╗¡a, sec g├╡ 1 nß╗¡a, ops g├╡ 1 nß╗¡a, sau khi nhß║¡p xong th├¼ sec/ops chß╗ë biß║┐t l├á c├│ c├íi path ─æ├│, ko biß║┐t pass l├á j.
++		+ Dev code & commit tr├¬n repo dev -> sau 30'-1h repo dev ─æc sync ─æß║┐n repo prod, ops c┼⌐ng viß║┐t pipeline ─æß╗â cicd cho app v├á commit nh╞░ vß║¡y.
++		+ trong pipeline, ops define url vault, path vault, trong jenkins ops define credential vault -> ─æß║┐n ng├áy golive th├¼ chß║íy
++
++- gitops: sß╗¡ dß╗Ñng kß║┐t hß╗úp vß╗¢i Vault, ko l╞░u secret trong git.
++- kyverno: xß╗¡ l├╜ ph├ón quyß╗ün
++- Vault: quß║ún l├╜ secret tß║¡p trung, edit/update secret -> ko c├│ quyß╗ün v├áo Vault th├¼ ko xem ─æc
++	+ ks8 load secret by Agent -> ph├ón quyß╗ün xem secret
++	+ gitlab: save path of secret on Vault, ko ─æc khai b├ío secret trß╗▒c tiß║┐p
++	
++	+ nß║┐u k sß╗¡ dß╗Ñng Vault, khi agent inject secret v├áo pod th├¼ secret sß║╜ l├á env var/file, bß║Ñt cß╗⌐ ai c├│ quyß╗ün exec pod c┼⌐ng xem ─æc secret (maintainer) -> d├╣ng Vault
++		- if not Vault: xxx
++	+ Gitlab-CI:
++		+ save value of Vault
++		+ cß║ºn x├íc thß╗▒c (user, pass) ─æß║┐n Vault rß╗ôi mß╗¢i pull value vß╗ü ─æ╞░ß╗úc.
++		-> d├╣ng gitlab-secret
++	+ Jenkins: define secret trong credential
++		
++- Security:
++	+ Quy tr├¼nh use, save credential, ph├ón quyß╗ün, quß║ún l├╜ ntn:
++		- credential save on Vault, chia 2 nß╗¡a, ops 1 nß╗¡a, sec 1 nß╗¡a
++		- khai b├ío secret v├áo helm/manifest, path l├á url tr├¬n vault, ─æ├ú gß╗ôm 2 nß╗¡a tr├¬n kia
++	+ QT1:
++		- Cluster: 	d├╣ng RBAC giß╗¢i hß║ín quyß╗ün cß╗ºa user, cho ph├⌐p user/group c├│ quyß╗ün j vß╗¢i secret/pro/deployment
++		- k8s:		c┼⌐ng cß║ºn ph├ón quyß╗ün pod, ..., ko phß║úi ai c┼⌐ng c├│ thß╗â xem secret hay exec pod ─æc
++		
++	
++	+ Secrets Store CSI Driver: kß║┐t hß╗úp vs Dev + RBAC ─æß╗â ph├ón quyß╗ün cho api k8s
++- Migrate DB:
++	+ 
++	+ 
+\ No newline at end of file
