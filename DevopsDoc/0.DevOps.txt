@@ -209,8 +209,8 @@
 					- chown -R todolist:todolist /projects/todolist/
 					- chmod -R 750 /projects/todolist/
 				// 1. 
-				+ install packages: 		sudo apt install nodejs nginx npm		(user root)
-				+ install dependencies:		npm install						(user todolist)
+				+ install packages: 		sudo apt install nodejs nginx npm -y		(user root)
+				+ install dependencies:		npm install									(user todolist)
 				// 2.
 				+ Configs:
 					- package.json:
@@ -464,7 +464,9 @@
 		
 		+ Gitlab: 
 			- 1. Install runner:
-				+ Install gitlab-runner on gitlab-server, then add token: apt install gitlab-runner	-> working directory= /home/gitlab-runner;			gitlab-runner register -> enter gitlab domain, token (Settings of project CI/CD: Runner: Tokens)
+				+ Install gitlab-runner on gitlab-server, then add token: 
+					- curl -L "https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh" | sudo bash
+						apt install gitlab-runner	-> working directory= /home/gitlab-runner;			gitlab-runner register -> enter gitlab domain, token (Settings of project CI/CD: Runner: Tokens)
 					- Executor: 	shell, docker, kubernetes
 					- Config:		/etc/gitlab-runner/config.toml			-> edit: concurrent = 4 -> runner có thể chạy đồng thời 4 dự án khác nhau, nếu = 1 thì dự án sau phải chờ dự án trước chạy xong mới chạy đc
 				+ Start runner:		nohup gitlab-runner run --working-directory /home/gitlab-runner --config /etc/gitlab-runner/config.toml --service gitlab-runner --user gitlab-runner 2>&1 &
@@ -675,8 +677,9 @@
 				+ docker tag imageName:tag imageFormat				-> imageFormat: domain/project/repo:tag							// bản chất là copy sang 1 image khác
 				+ docker push domain/project/repo:tag				// format: domain/project/repo:tag
 				
-			- private registry: use https, auto verified		- ko dùng trong enterprise envr, self-verified
-				+ verified:		mkdir /tools/docker/registry/				cd /tools/docker/registry/			mkdir /tools/docker/registry/certs & data
+			- private registry: use https, auto verified					- ko dùng trong enterprise envr, self-verified
+				+ verified:		mkdir /tools/docker/registry/				-> cd /tools/docker/registry/			
+								mkdir /tools/docker/registry/certs & data
 					- install:		apt install openssl -y					// using https, not http
 					- reg key:		openssl req -newkey rsa:4096 -nodes -sha256 -keyout certs/domain.key -subj "/CN=192.168.1.100" -addext "subjectAltName=DNS:192.168.1.100,IP:192.168.1.100" -x509 -days 3650 -out certs/domain.crt 
 					- nano docker-compose.yml:
@@ -694,21 +697,33 @@
 							environment:
 							  REGISTRY_HTTP_TLS_CERTIFICATE: certs/domain.crt
 							  REGISTRY_HTTP_TLS_KEY: certs/domain.key
+						// end
 					- docker-compose up -d											// download registry 2
 					- docker-compose ps 											// show list registry-server				access registry-server: https://192.168.56.10:5000/v2/_catalog  	--> 	{ "repositories": [] } // empty repositories
-				
+					- docker-compose logs/pause/unpause/stop/up/down
+					
 				+ basic authentication:
 					- docker login 192.168.56.10									// login server by any username & passwd because self-verified
 					// authenticate IP server = verify certificate
 					- copy cert to authentication folder of this registry-server and 'pushed' server (gitlab, ...)
-						+ create sub folder: ../certs.d/192.168.56.10:5000/ in folder: /etc/docker/					mkdir -p /etc/docker/certs.d/192.168.56.10:5000
-						+ copy cert:																				cp 	/tools/docker/registry/certs/domain.crt 	/etc/docker/certs.d/192.168.56.10:5000/ca.crt
+						+ create sub folder: ../certs.d/192.168.56.10:5000/ in folder: /etc/docker/			mkdir -p /etc/docker/certs.d/192.168.56.10:5000
+						+ copy cert:																		cp 	/tools/docker/registry/certs/domain.crt 	/etc/docker/certs.d/192.168.56.10:5000/ca.crt
 					
 					// push image
 					- docker tag imageName:tag domain/project/repo:tag				-> imageFormat: domain/project/repo:tag			// bản chất là copy sang 1 image khác
 					- docker push domain/project/repo:tag							// format: domain/project/repo:tag				// 192.168.56.10:5000/devops/shoeshop:v3	
 					- docker pull 192.168.56.10:5000/devops/shoeshop:v3
-					
+				
+				+ docker-compose.yml for web:
+					- 	version: '3.7'
+						services:
+						  web:
+							image: nginx:alpine
+							ports:
+							  - "8000:80"
+							volumes:
+							  - ./app:/usr/share/nginx/html
+						// end
 			- harbor: cần mua domain (50k), thuê vps giá rẻ		- 	
 				+ vps: 		aws EC2
 					- aws EC2:
