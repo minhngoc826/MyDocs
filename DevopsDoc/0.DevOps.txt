@@ -293,7 +293,7 @@
 							spring.datasource.testOnBorrow=true									
 							spring.datasource.hikari.maximum-pool-size=10						
 						
-				- build:	(user shoeshop)			mvn install -DskipTest=true						(-DskipTest: bỏ qua maven auto test)				--> build ra 'target' folder
+				- build:	(user shoeshop)			mvn install -DskipTests=true						(-DskipTests: bỏ qua maven auto test)				--> build ra 'target' folder
 					
 				- run:		(user shoeshop)			nohup java -jar target/pathOfJarFile 2>&1 &		(nohup: auto save log to nohup.out file, 		2>&1 &: chạy background -> kill process: kill -9 pId, -9=buộc dừng)
 													nohup java -jar target/shoe-ShoppingCart-0.0.1-SNAPSHOT.jar 2>&1 &								// -Djava.net.preferIPv4Stack=true: set IPv4  		-Djava.net.preferIPv6Addresses=false
@@ -494,7 +494,7 @@
 							- whoami
 							- pwd
 							- ls
-							- mvn install -DskipTest=true
+							- mvn install -DskipTests=true
 						tags:
 							- gitlab-runner
 					
@@ -627,7 +627,7 @@
 					FROM maven:3.5.3-jdk-8-alpine as build						# tạo input build cho run state
 					WORKDIR /app
 					COPY . .
-					RUN mvn install -DskipTest=true								# build folder: /app/target
+					RUN mvn install -DskipTests=true								# build folder: /app/target
 					
 				+ ## run state
 					-------------------------------------------------------------------------
@@ -748,9 +748,131 @@
 			- Docker network
 		
 		+ Docker & Gitlab CI/CD:
-			- 
+			- usermod -aG docker gitlab-runner					// add group docker for user gitlab-runner, để gitlab có thể run docker
+			- image format domain/project/image:tag_commit		-> add variables for Gitlab: project settings -> CI/CD -> Variables -> add variables for registry:	REGISTRY_URL / PROJECT / VERSION / USER / PASSWORD
+			- edit .gitlab-ci.yml:																										Gitlab variables:			CI_PROJECT_NAME, CI_COMMIT_TAG, CI_COMMIT_SHORT_SHA
+				+ variables global:		
+					- DOCKER_IMAGE: 		${REGISTRY_URL}/${REGISTRY_PROJECT}/${CI_PROJECT_NAME}:${CI_COMMIT_TAG}_${CI_COMMIT_SHORT_SHA}
+					- DOCKER_CONTAINER:		$CI_PROJECT_NAME
+				+ build&push:
+					- before_script: 	docker login ${REGISTRY_URL} -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD}
+					- script:			docker buil -t ${DOCKER_IMAGE} .												docker push $DOCKER_IMAGE
+				+ run:
+					- before_script: 	docker login ${REGISTRY_URL} -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD}
+					- script:			docker run --name $DOCKET_CONTAINER -dp 8080:8080 $DOCKER_IMAGE					// note: port in Dockerfile must same containerPort in run command: -dp 8080:8080 and not use port which is running on server
+				+ showlog:
+					- script:			docker logs $DOCKER_CONTAINER
+			- note: 
+				+ REGISTRY_URL: 
+					- harbor registry: 		server.example.com
+					- private registry:		192.168.56.10:5000			// trước hết cần add cert cho gitlab để truy cập docker registry; need port, nếu convert được 192.168.56.10:5000 sang domain server.example.com thì dùng server.example.com
 		
-	1.5. Jenkins
+	1.5. Jenkins:
+		- Define:				1 máy chủ tự động hóa (open source) hàng đầu, cung cấp nhiều plugins hỗ trợ xây dựng, triển khái và tự động hóa bất kì project, ko chỉ là CI/CD		- language: groovy
+		- install jenkins:		create file: /tools/jenkins/jenkins-install.sh				-> 		run: chmod +x ../jenkins-install.sh (cap quyrn execute)				sh/bash ../jenkins-install.sh
+									#!/bin/bash
+									apt install openjdk-17-jdk -y
+									java --version
+									wget -p -O - https://pkg.jenkins.io/debian/jenkins.io.key | apt-key add -
+									sh -c 'echo deb http://pkg.jenkins.io/debian-stable binary/ > /etc/apt/sources.list.d/jenkins.list'
+									apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 5BA31D57EF5975CA
+									apt-get update
+									apt install jenkins -y
+									systemctl start jenkins
+									ufw allow 8080					# open firewall port 8080 for jenkins
+								
+								+ add host for jenkins-sever & window host: 192.168.56.40 jenkins.devops.tech
+								+ reverse proxy: 
+									- dung webserver: 	nginx
+									- file config:		nano /etc/nginx/conf.d/jenkins.devops.tech.conf
+								+ neu co nhieu version java:	update-alternatives --config java -> select jdk muốn dùng
+								
+		- Jenkins: la noi chay pipeline, ko deploy project tren jenkins server
+		- Manage Jenkins:
+			+ System:	
+			+ Plugins:	add/remove plugin
+			+ Nodes: 	add node server agent vao jenkins server -> dung jenkins agent de connect toi cac server deploy project, ko su dung ssh vi rat nguy hiem (ket noi p2p)
+			+ Security:	phan quyen, jenkins defalut ko co phan quyen, cài plugin để phân quyền
+			+ Crendentials:		save password, private key, ...
+			+ Users:
+			+ Systemlog:	
+			+ Jenkins CLI: 		hoàn toàn tự động mọi thứ
+		
+		- Jenkins CI/CD:
+			// 1. kết nối jenkins-server đến lab-server: 		jenkins Agent
+			+ Jenkins Agent:				java version on client ~ java version on Jenkins server install (thay vì dùng ssh - kết nối ngang hàng, ko bảo mật, dễ gây lỗi)
+				- lab-server: 				
+					+ install java version for node (same java version on jenkins): apt install jdk...
+					+ adduser jenkins
+					+ add folder: /var/lib/jenkins (nơi lưu các project cần triển khai trên lab-server)		-> 		chown -R jenkins. /var/lib/jenkins
+					+ để user jenkins chạy đc file project (.jar) thì cần gán quyền NOPASSWD cho user jenkins giống user gitlab-runner
+				- Jenkins:				
+					+ add Node:		
+						- number of executors: 	số pipeline đc chạy cùng lúc	-	Custom workdir path / Remote root directory: 1 folder on lab-server (/var/lib/jenkins)
+						- port/inbound:			create fixed port in Security (ko đc trùng port)	
+						- save:					click to node to show config to connect client -> run from agent command line, with the secret stored in a file
+				- lab-server:			su jenkins	-	cd /var/lib/jenkins														// ko dùng user root
+										echo 377af60a51c9471b486e10c4b928ca5fb66c430986e337b67162df2bdc101e1a > secret-file
+										curl -sO http://jenkins.devops.tech:8080/jnlpJars/agent.jar
+										java -jar agent.jar -url http://jenkins.devops.tech:8080/ -secret @secret-file -name "lab-server" -webSocket -workDir "/var/lib/jenkins" > nohup.out 2>&1 &
+			
+			// 2. kết nối jenkins-server đến gitlab-server: 	2.1. plugin-gitlab & BlueOcen		2.2. tạo pipeline CI/CD
+			+ Jenkins Gitlab:
+				// 2.1. Kết nối jenkins-server đến gitlab-server
+				- Gitlab:
+					+ tạo user jenkins có quyền admin, để có thể pull bất cứ project nào	-> 	login user jenkins -> Profile -> Access Token: tạo token with scope API (glpat-yxTGnBKM4XPAEYJ8WiUZ: add token vào jenkins)
+				- Jenkins: 
+					+ install plugin: 	Gitlab, BlueOcen (down log, UI hiện đại hơn)			- add domain gitlab
+					+ Manage Jenkins:	-> System -> Gitlab:	set name - domain - add API token [Domain: Global  -  Kind: API token  -  Scope: Global/System  -  ID: jenkins-gitlab-user] -> Add -> Test Connection Success
+					+ Save
+				// 2.2. Tạo pipeline CI/CD
+				- Jenkins: create Folder & Pipeline
+					+ Folder:	(Dashboard -> New Item) tạo mỗi folder cho dự án -> chứa jobs của dự án đó
+						- lab-server: folder Action-in-lab
+					+ Pipeline: tạo pipeline cho dự án in folder Action-in-lab ( Dashboard -> Action-in-lab folder -> New Item -> Pipeline: name shoeshop) -> Config as below:
+						- Config pipeline shoeshop:	(Full project name: Action-in-lab/shoeshop)
+							- Discard old builds: 	Max build to keep - giữ lại số bản build latest = 10
+							- Gitlab connection:
+							- Build trigger: 		event push, merge, ...
+							- Pipeline:				Pipeline script from SCM -> SCM: Git / Repo Url: http://gitlab.devops.tech/group/shoeshop.git / Credentials: new Jenkins [user: jenkins, pass: password]
+							- Branches to build:	add multi branch
+							- Jenkinsfile:			create file on git project
+						- Save
+						
+					+ Token for user jenkins:		Account -> Security -> API token: add new token (nên tạo user riêng cho project)
+				- Gitlab:
+					+ add host for jenkins domain jenkins.devops.tech
+					+ Allow Webhooks:	Admin Setting -> Network -> Outbound request:  Allow requests to the local network from webhooks and integrations -> Save
+					+ Add Webhooks:		Project Setting -> Webhooks) add Webhooks from Jenkins info
+						- URL: format [http://<user jenkins>:<token user jenkins>@<domain jenkins>/project/<path of project on jenkins>]	// http://user:token@jenkins.devops.tech/project/Action-in-lab/shoeshop
+						- Add -> Test event: Http 200 = success
+						
+					+ Add Jenkinsfile for project: groovy syntax
+						pipeline {
+							agent {
+								label 'lab-server-label'
+							}
+							environment {
+								appUser = "shoeshop"
+								appName =  "shoe-ShoppingCart"
+								appVersion = "0.0.1-SNAPSHOT"
+								appType = "jar"
+								processName = "${appName}-${appVersion}.${appType}"
+								folderDeploy = "/datas/${appUser}"
+								buildScript = "mvn clean install -DskipTests=true"
+							}
+							stages {
+								stage('build') {
+									steps {
+										sh(script: """ whoami;pwd;ls -la;${buildScript} """, label: "build-job with maven")
+									}
+								}
+							}
+						}
+
+		
+		// 1. kết nối jenkins-server đến lab-server: 		jenkins Agent
+		// 2. kết nối jenkins-server đến gitlab-server: 	plugin-gitlab & BlueOcen
 	
 	1.6. Monitoring
 	
@@ -780,4 +902,4 @@ Select: VirtualBox NDIS6 Bridged Networking Driver.
 Click: OK.
 Select the bridged adapter in VirtualBox
 You should now be able to restart VirtualBox, select bridged adapter for your network configuration for your virtual machine,
- and now names should populate in the Names dropdown; select your primary connection and you should be good to go now.
+ and now names should populate in the Names dropdown; select your primary connection and you should be good to go now.
