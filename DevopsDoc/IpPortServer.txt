@@ -162,4 +162,42 @@ desktop					192.168.56.40
 /////////////////////////////////////////////////////////////////////////////////////
 6. Monitoring
 /////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////
+- Mô hình CI/CD:
+	- TCB:
+		+ Team: 		Sec - Vault			Ops - System		 Dev - Code
+		+ Tool CI/CD:	jenkins - ansible
+		+ Repo:			gitlab
+		+ 1 tài khoản đặc quyền với full quyền tác động lên server, tkdq nhập use/path lên vault path, pass chia 2 nửa, sec gõ 1 nửa, ops gõ 1 nửa, sau khi nhập xong thì sec/ops chỉ biết là có cái path đó, ko biết pass là j.
+		+ Dev code & commit trên repo dev -> sau 30'-1h repo dev đc sync đến repo prod, ops cũng viết pipeline để cicd cho app và commit như vậy.
+		+ trong pipeline, ops define url vault, path vault, trong jenkins ops define credential vault -> đến ngày golive thì chạy
+		
+		+ 
+
+- gitops: sử dụng kết hợp với Vault, ko lưu secret trong git.
+- kyverno: xử lý phân quyền
+- Vault: quản lý secret tập trung, edit/update secret -> ko có quyền vào Vault thì ko xem đc
+	+ ks8 load secret by Agent -> phân quyền xem secret
+	+ gitlab: save path of secret on Vault, ko đc khai báo secret trực tiếp
+	
+	+ nếu k sử dụng Vault, khi agent inject secret vào pod thì secret sẽ là env var/file, bất cứ ai có quyền exec pod cũng xem đc secret (maintainer) -> dùng Vault
+		- if not Vault: xxx
+	+ Gitlab-CI:
+		+ save value of Vault
+		+ cần xác thực (user, pass) đến Vault rồi mới pull value về được.
+		-> dùng gitlab-secret
+	+ Jenkins: define secret trong credential
+		
+- Security:
+	+ Quy trình use, save credential, phân quyền, quản lý ntn:
+		- credential save on Vault, chia 2 nửa, ops 1 nửa, sec 1 nửa
+		- khai báo secret vào helm/manifest, path là url trên vault, đã gồm 2 nửa trên kia
+	+ QT1:
+		- Cluster: 	dùng RBAC giới hạn quyền của user, cho phép user/group có quyền j với secret/pro/deployment
+		- k8s:		cũng cần phân quyền pod, ..., ko phải ai cũng có thể xem secret hay exec pod đc
+		
+	
+	+ Secrets Store CSI Driver: kết hợp vs Dev + RBAC để phân quyền cho api k8s
+- Migrate DB:
+	+ 
+	+ 
+/////////////////////////////////////////////////////////////////////////////////////
