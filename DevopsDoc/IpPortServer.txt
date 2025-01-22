@@ -1,33 +1,34 @@
-// Home
-Name							IP						Web/Port/Type
-lab-server						192.168.1.10			todolist:8080/Vuejs:nginx		shoeshop
-git-db-registry-server			192.168.1.20			gitlab:80						database:3306				registry:5000
-jenkins-server					192.168.1.30			jenkins:8080
-///////////////////Samsung//////////////////////////////////////////////////////////////////
-Name					IP						Web/Port/Type
-dev-server				192.168.56.10			todolist:2001/Vuejs:nginx			vision:3000/React:service			shoeshop:8090/Spring:
-												todolist:5555/Vuejs:docker			vision:4444/React:docker			shoeshop:7777-6666/Spring:docker
-database-server			192.168.56.20
-gitlab-server			192.168.56.30																					shoeshop:8066/Spring
-desktop					192.168.56.40
+///////////////////	Home //////////////////////////////////////////////////////////////////
+Name							IP										Web/Port/Type
+lab-server						192.168.1.10							todolist:8080/Vuejs:nginx		shoeshop
+git-db-registry-server			192.168.1.20							gitlab:80						database:3306				registry:5000
+jenkins-server					192.168.1.30							jenkins:8080
+///////////////////	Company	//////////////////////////////////////////////////////////////////
+Name					IP						Domain					Web/Port/Type
+lab-server				192.168.56.10			server.devops.com		todolist:2001/Vuejs:nginx			vision:3000/React:service			shoeshop:8090/Spring:
+																		todolist:5555/Vuejs:docker			vision:4444/React:docker			shoeshop:7777-6666/Spring:docker
+database-server			192.168.56.20:3306		database.devops.com
+gitlab-server			192.168.56.30			gitlab.devops.com
+registry-server			192.168.56.40:5000		registry.devops.com
+jenkins					192.168.56.50			jenkins.devops.com
+desktop					192.168.56.90
+/////////////////////////////////////////////////////////////////////////////////////
+ssh ngocnm@192.168.56.
 /////////////////////////////////////////////////////////////////////////////////////
 1. Project: Envinroment: deployment - staging - prodction
 2. Devops:
 	- Setup Envinroment: 
 		+ Servers: 					Linux, nginx, connection between servers [dev-server, gitlab-server, database-server], phân quyền user / security
 		+ Setup Manage project: 	Gitlab, Jenkins, Travis, Circle
-		+ CI/CD:					build -> test: 	pef, security, clean code, ...
+		+ CI/CD:					build -> test: 	pef, security, clean code, unit test, pin test ...
 									run: 			deploy
-// Company
-1. Gitlab-server: 		container project code -> CI/CD 
-						-> build -> run: make docker image
-						
-2. Database-server:		contains database
-						-> docker: contains docker image --> push image to registry
-						
-3. Server (dev-server):	deploy web, app
-						-> docker: registry-server
-						
+/////////////////////////////////////////////////////////////////////////////////////
+0. Virtualbox VM: 				
+	+ shared folder:		E:\VMWare\SharedFolder
+		- VM -> Setting -> SharedFolder -> New -> Select E:\VMWare\SharedFolder -> Mount point: /mnt/share-folder or /home/user/shared-folder 	 & 		Select: Auto mount & Make Permanent
+		- VM:		sudo mount -t vboxsf SharedFolder /mnt/shared-folder
+		- Host: 	copy file to E:\VMWare\SharedFolder		-> ls /mnt/shared-folder
+		- VM:		cp filePath /mnt/shared-folder			-> F5 E:\VMWare\SharedFolder
 /////////////////////////////////////////////////////////////////////////////////////
 1. Project
 	- install dependencies / tools for project (run & deploy)
@@ -54,8 +55,9 @@ desktop					192.168.56.40
 														ExecStart=npm run start -- --port=3000
 	- backend:
 		+ Java Spring:	
-			- install java, maven, database:	apt install openjdk-17-jdk openjdk-17-jre maven mariadb-server -y
-			- deploy:			build:	mvn install -DskipTest=true		/		run:	nohup java -jar target/shoe-ShoppingCart-0.0.1-SNAPSHOT.jar 2>&1 &
+			- install java, maven, database:	apt install openjdk-17-jdk openjdk-17-jre maven -y [mariadb-server]
+			- deploy:							build:	mvn install -DskipTest=true		/		run:	nohup java -jar target/shoe-ShoppingCart-0.0.1-SNAPSHOT.jar 2>&1 &
+			- config port:						server.port=8090								// project/src/main/resource/application.properties
 /////////////////////////////////////////////////////////////////////////////////////
 2. Database:	database-server
 	- install: 		apt install mariadb-server -y
@@ -63,15 +65,16 @@ desktop					192.168.56.40
 	- create db:	mysql -u root	-->		create database dbName; create user 'uName'@'%' indentified by 'pass'; 
 											grant all privileges on dbName.* to 'uName'@'%'; flush privileges; exit
 	- connect db:	mysql -h IP	-P 3306 -u uName -p 	-> enper password		-> use dbName; source db-file-path; // import db
+	// gitlab-server
 	- config db for project:		project/src/main/resource/application.properties
 		- spring.datasource.url=jdbc:mysql://<address_server>:<port>/<database_name>//?useSSL=false
 		- spring.datasource.username=<username>
 		- spring.datasource.password=<password>
-		- server.port=8090
 /////////////////////////////////////////////////////////////////////////////////////
 3. Gitlab: gitlab-server
 	- gitlab-ee:
 		+ install: 		google
+			- offline:		dpkg -i gitlab-ee_14.4.1-ee.0_amd64.deb
 			- config: 		/etc/gitlab/gitlab.rb		-> external_url: gitlab domain	->		gitlab-ctl reconfigure
 			- add hosts:	/etc/hosts					/windows hosts					-> 		add for gitlab-server & other server
 		+ admin:		manage group/user/project
@@ -83,84 +86,127 @@ desktop					192.168.56.40
 /////////////////////////////////////////////////////////////////////////////////////
 4. Registry server: docker registry-server
 	+ public: 			dockerhub
-	+ harbor registry: 	
-	+ private registry: self authentication by openssl
+	+ harbor registry: 	harbor							-> manage users, docker [projects, images, and list tags of image] 		->		authenticate by 
+	+ private registry: self authentication by openssl	(any user, any pass)
 		- install openssl:				apt install openssl -y			mkdir -p /tools/docker/registry/certs & data
 		- gen key by openssl:			cd /tools/docker/registry/		openssl req -newkey rsa:4096 -nodes -sha256 -keyout certs/domain.key -subj "/CN=192.168.1.10" -addext "subjectAltName=DNS:192.168.1.10,IP:192.168.1.10" -x509 -days 3650 -out certs/domain.crt
 		- install docker-compose: 		apt install docker-compose
-		- write docker-compose.yml:		cd /tools/docker/registry/		nano docker-compose.yml		--> run: docker-compose up -d
+		- write docker-compose.yml:		cd /tools/docker/registry/		nano docker-compose.yml		--> 	run: docker-compose up -d
 			version: '3'
 			services:
-				type-name:
-					image: image:tag
+				registry:
+					image: registry:2
+					restart: always
 					container_name: registry-server
-					restart: 
 					ports:
-						- "5000":"5000"
+						- "5000:5000"
 					volumes:
-						-
-					envinroment:
-						-
-		- copy cert to self & any client:		mkdir -p /etc/docker/certs.d/192.168.56.10:5000			cp 	/tools/docker/registry/certs/domain.crt 	/etc/docker/certs.d/192.168.56.10:5000/ca.crt
+						- ./data:/var/lib/registry
+						- ./certs:/certs
+					environment:
+						REGISTRY_HTTP_TLS_CERTIFICATE: certs/domain.crt
+						REGISTRY_HTTP_TLS_KEY: certs/domain.key
+				web:
+					image: nginx:alpine
+					ports:
+						- "8000:80"
+					volumes:
+						- ./app:/usr/share/nginx/html
 		- check:
-			+ docker-compose ps						// list docker-compose running
-			+ 192.168.56.10:5000/v2/_catalog:		// list images on registry			// registry-domain/v2/_catalog ~ registry.devops.com/v2/_catalog
-			+ 192.168.56.10:5000/v2/image/tag/list:	// list tags of image on registry
-/////////////////////////////////////////////////////////////////////////////////////
+			+ docker-compose ps							// list docker-compose running
+			+ 192.168.56.10:5000/v2/_catalog:			// list images on registry									// registry-domain/v2/_catalog ~ registry.devops.com/v2/_catalog
+			+ 192.168.56.10:5000/v2/image/tag/list:		// list tags of image on registry
+		- *** copy cert to any client using registry:	mkdir -p /etc/docker/certs.d/192.168.56.10:5000		----	cp 	/tools/docker/registry/certs/domain.crt /etc/docker/certs.d/192.168.56.10:5000/ca.crt
+//////////////////////////////////////////////////////////////////////////////////////
 5. Jenkins server:
-	+ install:
-	+ connect jenkins vs lab-server
-	+ connect jenkins vs gitlab-server
-	+ CI/CD with jenkins:
-/////////////////////////////////////////////////////////////////////////////////////
+	+ install jenkins:		create file: /tools/jenkins/jenkins-install.sh				-> 		run: chmod +x ../jenkins-install.sh (cap quyen execute)				sh/bash ../jenkins-install.sh
+		- add hosts & reverse proxy:	nginx 	& 	nano /etc/nginx/conf.d/jenkins.devops.tech.conf	 ---	server { listen: 80; location /{ proxy_pass: http://jenkins.devops.com:8000  ... } }
+	+ connect jenkins-server vs lab-server: 	by Jenkins Agent
+		- lab-server:		install java version same jenkins	/	adduser jenkins		/	add jenkins-folder: /var/lib/jenkins -> chown -R jenkins:jenkins /var/lib/jenkins	/	NOPASSWD: visudo for user jenkins
+		- jenkins-server:	add Node	[Number of executors	--	Remote root directory: jenkins-folder from lab-server 	--	fixed port] 	-> 		save 	->		show command to connect lab-server
+		- lab-server:		su jenkins	-	cd /var/lib/jenkins		-> run command
+	+ connect jenkins-server vs gitlab-server:	by plugin Gitlab, BlueOcen
+		- gitlab-server:	create user jenkins - admin role		-> 	login by user jenkins		->		Profile: Access Token scope API
+		- jenkins-server:	install plugin: 	Gitlab, BlueOcen	-> 	System -> Gitlab: set name - domain - add API token [Domain: Global  -  Kind: API token  -  Scope: Global/System  -  ID: jenkins-gitlab-user] -> Add -> Test
+//////////////////////////////////////////////////////////////////////////////////////
 6. Deploy servers: lab-server, sub-server, ...
-	+ Gitlab CI/CD:
-		// lab-server
-		- gitlab-runner:	install on lab-server (not gitlab-server)
-			+ install:		curl -L "https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh" | sudo bash	/	apt install gitlab-runner
-				- config:	/etc/gitlab-runner/config.toml		-> 		edit concurrent
-							visudo								->		gitlab-runner ALL=(ALL:ALL) NOPASSWD: /bin/cp*			// for using other user to run CI/CD
+	+ add hosts for gitlab-server, jenkins-server, lab-server, registry-server
+	
+	+ Gitlab CI/CD: 		using gitlab-runner
+		- lab-server: install gitlab-runner
+			- online:	curl -L "https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh" | sudo bash	/	apt install gitlab-runner
+			- offline:	curl -LJO "https://gitlab-runner-downloads.s3.amazonaws.com/latest/deb/gitlab-runner_amd64.deb"		/	 curl -LJO "https://gitlab-runner-downloads.s3.amazonaws.com/latest/deb/gitlab-runner-helper-images.deb"
+						dpkg -i gitlab-runner-helper-images.deb gitlab-runner_amd64.deb
+			- config:	/etc/gitlab-runner/config.toml		-> 		edit concurrent = 4
+						visudo								->		gitlab-runner ALL=(ALL:ALL) NOPASSWD: /bin/cp*-chmod*-su shoeshop*			// for using other user to run CI/CD
 			+ gitlab-runner register -> gitlab domain, token (on gitlab-server), runner name, executor=shell/docker/...
-			+ gitlab-runner run --wd /home/gitlab-runner --config ../config.toml --service gitlab-runner --user gitlab-runner
-			+ gitlab-runner list
-		// gitlab-server
-		- gitlab:	
-			+ .gitlab-ci.yml	-> stages / variables / stage: job / when: manual / script / tag: runner-name / only: tags
-			+ CI with docker:
-				- build:	
-					+ before_script:	docker login registry-server -u user -p password
-					+ script:		 	docker build -t image . 	/		docker push image registry-server
-				- run:
-					+ before_script:	docker login registry-server -u user -p password
-					+ script:		 	docker pull image	 	/		docker run --name containerName -dp serverPort:containerPort image		/	add user & roles
-					
+			+ gitlab-runner run --working-directory /home/gitlab-runner --config ../config.toml --service gitlab-runner --user gitlab-runner	-> gitlab-runner list
+		- gitlab-server:
+			+ .gitlab-ci.yml: 	creater project/.gitlab-ci.yml	-> stages: [jobs] / variables: [vars] / stage: job / when: manual / script: [commands] / tag: runner-name / only: tags/branch
+			+ CI with docker:	add variables: REGISTRY_URL / PROJECT / VERSION / USER / PASSWORD
+				- usermod -aG docker gitlab-runner					// add group docker for user gitlab-runner, để gitlab có thể run docker
+				- create project/Dockerfile:		-> 
+					+ build:	[FROM build-alpine:ver as build]										[WORKDIR /app	COPY . .] 	[RUN build-command]	
+					+ run:		[FROM alpine:ver	RUN adduser -D uName	RUN run-envr-command]		[WORKDIR /run	COPY --from=build /target/image  /run/image]		[RUN chmod -R uName	 	User uName]		EXPOSE containerPort
+								[ENTRYPOINT run-command]												CMD ["command", "params", ""]		// run-command = java -jar /run/shoeshop/shoe-ShoppingCart-0.0.1-SNAPSHOT.jar
+				- .gitlab-ci.yml:
+					+ build:
+						- before_script:	docker login registry-server -u user -p password
+						- script:		 	docker build -t image . 	/		docker push image registry-server			// image format: domain/project/image:tag_commit
+					+ run:
+						- before_script:	docker login registry-server -u user -p password
+						- script:		 	docker pull image	 		/		docker run --name containerName -dp serverPort:containerPort image		/		add user & roles
+	
 	+ Jenkins CI/CD:
-		- 
-		-
+		- jenkins-server:	create Folder & Pipeline of Folder & create token for user jenkins (nên tạo user riêng cho project - ngocnm, token dung tren gitlab)
+			+ Folder:		Dashboard -> New Item -> Folder ->	Action-in-lab (lab-server)
+			+ Pipeline:		Dashboard -> Action-in-lab folder -> New Item -> Pipeline: name shoeshop	-> config:	[Discard old builds: Max build to keep / Gitlab connection / Build trigger / Branches to build]
+							-> config: [Pipeline:	Pipeline script from SCM -> SCM: Git / Repo Url: http://gitlab.devops.tech/group/shoeshop.git / Credentials: new Jenkins [user-gitlab: jenkins, pass: password]]
+			+ Token:		Account -> Security -> API token: add new token
+		- gitlab-server:	
+			+ Allow Webhooks:	Admin Setting -> Network -> Outbound request:  Allow requests to the local network from webhooks and integrations -> Save
+			+ Add Webhooks:	Project Setting -> Webhooks: [URL:  http://<user jenkins>:<token user jenkins>@<domain jenkins>/project/<path of project on jenkins>]	// http://user:token@jenkins.devops.com/project/Action-in-lab/shoeshop
+			+ Add Jenkinsfile for project: groovy syntax
+					pipeline {
+						agent {
+							label 'lab-server-label'
+						}
+						environment {
+							appUser = "shoeshop"
+							appName =  "shoe-ShoppingCart"
+							appVersion = "0.0.1-SNAPSHOT"
+							processName = "${appName}-${appVersion}.jar"
+							folderDeploy = "/datas/${appUser}"
+							buildScript = "mvn clean install -DskipTests=true"
+						}
+						stages {
+							stage('build') {
+								steps {
+									sh(script: """ whoami;pwd;ls -la;${buildScript} """, label: "build-job with maven")
+								}
+							}
+						}
+					}
 /////////////////////////////////////////////////////////////////////////////////////
-4. Docker: on lab-server
-	- install: apt install docker.io
-	- docker  login url / pull domain/project/image:tag / 				start container / stop / rm / rmi / logs / ps / push domani/project/image:tag
-	- docker build -t domani/project/image:tag					-> build image
-	- docker run --name name -dp 8080:80 -it image:tag
+7. Docker: on lab-server
+	- install: apt install docker.io									sh install-docker.sh
+	- docker  login url / pull domain/project/image:tag / 				start containerName / stop / rm / rmi / logs / ps / push domani/project/image:tag
+	- docker build -t domani/project/image:tag -f Dockerfile			-> build image
+	- docker run --name name -dp 8080:80 -it image:tag					// 8080:80 = server-port:container-port
 	
 	- Dockerfile:	create new Dockerfile in ../project/
 		+ Build:	FROM build-alpine:ver as build			WORKDIR /app							COPY . .							RUN cmd_build
 		+ Run:		FROM run-alpine:ver						WORKDIR /run		RUN cmd_user		COPY --from=build /src /target		Run	cmd_run				ENTRYPOINT cmd_run
 		+ EVN, EXPOSE, USER
+	- docker-compose: 	docker-compose up -d docker-compose.yml			docker-compose ps
 	
-	- docker-compose:
-		
-		+ docker-compose.yml
-			
-		+ docker-compose up -d
-		
-	- Docker registry:
-					
+	- Docker component:
+		+ Docker volume
+		+ Docker compose
+		+ Docker network
 /////////////////////////////////////////////////////////////////////////////////////
-5. Jenkins
+8. Monitoring
 /////////////////////////////////////////////////////////////////////////////////////
-6. Monitoring
 /////////////////////////////////////////////////////////////////////////////////////
 - Mô hình CI/CD:
 	- TCB:
