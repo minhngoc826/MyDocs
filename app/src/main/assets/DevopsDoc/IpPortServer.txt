@@ -130,11 +130,13 @@ ssh ngocnm@192.168.56.
 //////////////////////////////////////////////////////////////////////////////////////
 5. Jenkins server:
 	+ install jenkins:		create file: /tools/jenkins/jenkins-install.sh				-> 		run: chmod +x ../jenkins-install.sh (cap quyen execute)				sh/bash ../jenkins-install.sh
-		- add hosts & reverse proxy:	nginx 	& 	nano /etc/nginx/conf.d/jenkins.devops.tech.conf	 ---	server { listen: 80; location /{ proxy_pass: http://jenkins.devops.com:8000  ... } }
+		- add hosts & reverse proxy:	nginx 	& 	nano /etc/nginx/conf.d/jenkins.devops.tech.conf	 ---	
+				server { listen 80; server_name jenkins.devops.com; location / { proxy_pass http://jenkins.devops.com:8000; } }
 	+ connect jenkins-server vs lab-server: 	by Jenkins Agent
-		- lab-server:		install java version same jenkins	/	adduser jenkins		/	add jenkins-folder: /var/lib/jenkins -> chown -R jenkins:jenkins /var/lib/jenkins	/	NOPASSWD: visudo for user jenkins
-		- jenkins-server:	add Node	[Number of executors	--	Remote root directory: jenkins-folder from lab-server 	--	fixed port] 	-> 		save 	->		show command to connect lab-server
-		- lab-server:		su jenkins	-	cd /var/lib/jenkins		-> run command
+		- lab-server:		install java version same jenkins: apt install openjdk-17-jdk / adduser jenkins	/ add jenkins-folder: /var/lib/jenkins 
+							-> chown -R jenkins:jenkins /var/lib/jenkins	/ NOPASSWD: visudo for user jenkins
+		- jenkins-server:	add Node [Number of executors 3/4 --	Remote root directory: jenkins-folder from lab-server -- fixed port] -> save ->	show command to connect lab-server
+		- lab-server:		su jenkins	-	cd /var/lib/jenkins		-> run commands with secret-file
 	+ connect jenkins-server vs gitlab-server:	by plugin Gitlab, BlueOcen
 		- gitlab-server:	create user jenkins - admin role		-> 	login by user jenkins		->		Profile: Access Token scope API
 		- jenkins-server:	install plugin: 	Gitlab, BlueOcen	-> 	System -> Gitlab: set name - domain - add API token [Domain: Global  -  Kind: API token  -  Scope: Global/System  -  ID: jenkins-gitlab-user] -> Add -> Test

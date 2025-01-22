@@ -785,6 +785,13 @@
 								+ reverse proxy: 
 									- dung webserver: 	nginx
 									- file config:		nano /etc/nginx/conf.d/jenkins.devops.tech.conf
+										server {
+											listen 80;
+											server_name jenkins.devops.com;
+											location / {
+												proxy_pass http://jenkins.devops.com:8080;
+											}
+										}
 								+ neu co nhieu version java:	update-alternatives --config java -> select jdk muốn dùng
 								
 		- Jenkins: la noi chay pipeline, ko deploy project tren jenkins server
