@@ -297,7 +297,6 @@
 					
 				- run:		(user shoeshop)			nohup java -jar target/pathOfJarFile 2>&1 &		(nohup: auto save log to nohup.out file, 		2>&1 &: chạy background -> kill process: kill -9 pId, -9=buộc dừng)
 													nohup java -jar target/shoe-ShoppingCart-0.0.1-SNAPSHOT.jar 2>&1 &								// -Djava.net.preferIPv4Stack=true: set IPv4  		-Djava.net.preferIPv6Addresses=false
-				
 				- ps -ef| grep shoeshop				(ps -ef: output của câu trước là input của câu sau;		grep xxx: tìm kiếm)
 
 	1.2. Git
@@ -585,7 +584,7 @@
 			- docker stop/rm $(docker ps -a -q)						-> stop/rm all containers (docker ps -a -q = containerId)		docker rm -f containerName/containerId
 			- docker rmi imageName:tag								-> xóa image
 			
-			- docker build -t imageName:tag	-f fileName				-> build project to docker image
+			- docker build -t imageName:tag	-f Dockerfile			-> build project to docker image
 			- docker logs -f containerName							-> xem log
 			
 			- docker hub: push image
@@ -655,6 +654,7 @@
 					
 					EXPOSE 8080													# container port
 					ENTRYPOINT java -jar /run/shoeshop/shoe-ShoppingCart-0.0.1-SNAPSHOT.jar
+					CMD ["nginx", "-g", "daemon off;"]
 					
 			- docker build -t imageName:tag	-f fileConfigName .
 			- docker run --name containerName -dp 9999:80 -it imageName:tag								# mỗi container ~ 1 server riêng biệt
@@ -769,7 +769,7 @@
 		
 	1.5. Jenkins:
 		- Define:				1 máy chủ tự động hóa (open source) hàng đầu, cung cấp nhiều plugins hỗ trợ xây dựng, triển khái và tự động hóa bất kì project, ko chỉ là CI/CD		- language: groovy
-		- install jenkins:		create file: /tools/jenkins/jenkins-install.sh				-> 		run: chmod +x ../jenkins-install.sh (cap quyrn execute)				sh/bash ../jenkins-install.sh
+		- install jenkins:		create file: /tools/jenkins/jenkins-install.sh				-> 		run: chmod +x ../jenkins-install.sh (cap quyen execute)				sh/bash ../jenkins-install.sh
 									#!/bin/bash
 									apt install openjdk-17-jdk -y
 									java --version
