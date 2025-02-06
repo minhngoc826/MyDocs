@@ -567,6 +567,7 @@
 		+ Install docker:						https://devopsedu.vn/courses/devops-for-freshers/lesson/bai-19-cach-su-dung-docker/
 			- mkdir tools/docker		-> 		touch tools/docker/install-docker.sh
 			- Run:	.install-docker.sh 			sh install-docker.sh 					bash install-docker.sh
+			- way2:	apt install docker-ce		https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-20-04
 			
 		+ Pull & run docker image from docker hub:					https://hub.docker.com/
 			- docker pull ubuntu:2204								-> pull imageName:tag, nếu ko có tag = latest
@@ -632,16 +633,11 @@
 					-------------------------------------------------------------------------
 					# using existing alpine from docker hub
 					FROM amazoncorretto:8u402-alpine-jre
-					
-					# config user for run
-					RUN adduser -D shoeshop										# create user
 					-------------------------------------------------------------------------
 					
 					-------------------------------------------------------------------------
 					# tự build alpine
 					FROM alpine:3.19											# using original alpine
-					
-					RUN adduser shoeshop										# create user
 					RUN apk add openjdk8										# install java 8 for alpine
 					-------------------------------------------------------------------------
 					
@@ -649,6 +645,7 @@
 					COPY --from=build /app/target/shoe-ShoppingCart-0.0.1-SNAPSHOT.jar /run/shoeshop/shoe-ShoppingCart-0.0.1-SNAPSHOT.jar
 					
 					# config user for run
+					RUN adduser -D shoeshop										# create user
 					RUN chown -R shoeshop:shoeshop /run/shoeshop
 					USER shoeshop
 					
@@ -758,8 +755,9 @@
 					- before_script: 	docker login ${REGISTRY_URL} -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD}
 					- script:			docker buil -t ${DOCKER_IMAGE} .												docker push $DOCKER_IMAGE
 				+ run:
-					- before_script: 	docker login ${REGISTRY_URL} -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD}
-					- script:			docker run --name $DOCKET_CONTAINER -dp 8080:8080 $DOCKER_IMAGE					// note: port in Dockerfile must same containerPort in run command: -dp 8080:8080 and not use port which is running on server
+					- before_script: 	docker login ${REGISTRY_URL} -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD}		docker pull $DOCKER_IMAGE
+					- script:			docker rm -f $DOCKET_CONTAINER
+										docker run --name $DOCKET_CONTAINER -dp 8080:8080 $DOCKER_IMAGE					// note: port in Dockerfile must same containerPort in run command: -dp 8080:8080 and not use port which is running on server
 				+ showlog:
 					- script:			docker logs $DOCKER_CONTAINER
 			- note: 
@@ -805,7 +803,7 @@
 			+ Systemlog:	
 			+ Jenkins CLI: 		hoàn toàn tự động mọi thứ
 		
-		- Jenkins CI/CD:
+		- Jenkins CI/CDeployment:
 			// 1. kết nối jenkins-server đến lab-server: 		jenkins Agent
 			+ Jenkins Agent:				java version on client ~ java version on Jenkins server install (thay vì dùng ssh - kết nối ngang hàng, ko bảo mật, dễ gây lỗi)
 				- lab-server: 				
@@ -817,10 +815,12 @@
 					+ add Node:		
 						- number of executors: 	số pipeline đc chạy cùng lúc	-	Custom workdir path / Remote root directory: 1 folder on lab-server (/var/lib/jenkins)
 						- port/inbound:			create fixed port in Security (ko đc trùng port)	
-						- save:					click to node to show config to connect client -> run from agent command line, with the secret stored in a file
+						- save:					click to node to show config to connect client -> run from agent command line, with the secret stored in a file		-> node not running
 				- lab-server:			su jenkins	-	cd /var/lib/jenkins														// ko dùng user root
+										// save secret key and agent.jar file
 										echo 377af60a51c9471b486e10c4b928ca5fb66c430986e337b67162df2bdc101e1a > secret-file
 										curl -sO http://jenkins.devops.tech:8080/jnlpJars/agent.jar
+										// start runing node
 										java -jar agent.jar -url http://jenkins.devops.tech:8080/ -secret @secret-file -name "lab-server" -webSocket -workDir "/var/lib/jenkins" > nohup.out 2>&1 &
 			
 			// 2. kết nối jenkins-server đến gitlab-server: 	2.1. plugin-gitlab & BlueOcen		2.2. tạo pipeline CI/CD
@@ -857,32 +857,266 @@
 					+ Add Jenkinsfile for project: groovy syntax
 						pipeline {
 							agent {
-								label 'lab-server-label'
+								label 'lab-server-node-label'
 							}
 							environment {
 								appUser = "shoeshop"
-								appName =  "shoe-ShoppingCart"
+								appName = "shoe-ShoppingCart"
 								appVersion = "0.0.1-SNAPSHOT"
 								appType = "jar"
-								processName = "${appName}-${appVersion}.${appType}"
+								processName = "${appUser}-${appVersion}.${appType}"
 								folderDeploy = "/datas/${appUser}"
 								buildScript = "mvn clean install -DskipTests=true"
+								copyScript = "cp target/${processName} ${folderDeploy}"
+								permsScript = "chown -R ${appUser}. ${folderDeploy}"
+								killScript = "sudo kill -9 \$(pgrep -f ${processName})"
+								deployScript = "sudo su ${appUser}; cd ${folderDeploy}; pwd; ls -l; whoami; java -jar ${processName} > nohup.out 2>&1 &"
 							}
 							stages {
 								stage('build') {
 									steps {
-										sh(script: """ whoami;pwd;ls -la;${buildScript} """, label: "build-job with maven")
+										sh(script: """ whoami; pwd; ls -la; ${buildScript} """, label: "show info")
+									}
+								}
+								stage('deploy') {
+									steps {
+										sh(script: """ ${copyScript} """, label: "copy jar file")
+										sh(script: """ ${permsScript} """, label: "set permission")
+										sh(script: """ ${killScript} """, label: "kill old processName")
+										sh(script: """ ${deployScript} """, label: "deploy app")
+										/////////// Delivery //////////////////////////////////
+										script {
+											try {
+												timeout(time: 5, unit: 'MINUTES') {
+													evn.userChoice = input message: "Do you want to deploy this?", parameters: [choice(name: 'deploy', choices: 'no\nyes', description: 'Choose "yes" to deploy')]
+												}
+												echo "Check choice: $env.userChoice"
+												if (evn.userChoice == 'yes') {
+													sh(script: """ ${copyScript} """, label: "copy jar file")
+													sh(script: """ ${permsScript} """, label: "set permission")
+													sh(script: """ ${killScript} """, label: "kill old processName")
+													sh(script: """ ${deployScript} """, label: "deploy app")
+												} else {
+													echo "User do not confirm the deployment!"
+												}
+											} catch(Exception ex) {
+												echo "Deploy Exception: $ex"
+											}
+										}
 									}
 								}
 							}
 						}
 
-		
+		- Jenkins CI/CDelivery:
+			+ make service to start jenkins-agent: 		nano /lib/systemd/system/jenkins-agent.service
+					[Unit]
+					Description=Jenkins Agent Service
+					After=network.target								# run service sau khi network dc thiet lap xong
+					
+					[Service]
+					Type=simple
+					WorkingDirectory=/var/lib/jenkins
+					ExecStart=/bin/bash -c 'java -jar agent.jar -url http://jenkins.devops.com:8080/ -secret @secret-file -name "lab-server-node" -webSocket -workDir "/var/lib/jenkins/"'		# command to run jenkins-agent
+					User=jenkins
+					Restart=always										# auto restart if it is stopped
+					
+					[Install]
+					WantedBy=multi-user.target							# can run by multi-user
+			+ CDelivery:
+				- approved deploy:	
+						pipeline {
+							agent {
+								label 'lab-server-node-label'
+							}
+							environment {
+								..........
+							}
+							stages {
+								stage('build') {
+									...............
+								}
+								stage('deploy') {
+									steps {
+										script {
+											try {
+												timeout(time: 5, unit: 'MINUTES') {
+													evn.userChoice = input message: "Do you want to deploy this?", parameters: [choice(name: 'deploy', choices: 'no\nyes', description: 'Choose "yes" to deploy')]
+												}
+												echo "Check choice: $env.userChoice"
+												if (evn.userChoice == 'yes') {
+													sh(script: """ ${copyScript} """, label: "copy jar file")
+													sh(script: """ ${permsScript} """, label: "set permission")
+													sh(script: """ ${killScript} """, label: "kill old processName")
+													sh(script: """ ${deployScript} """, label: "deploy app")
+												} else {
+													echo "User do not confirm the deployment!"
+												}
+											} catch(Exception ex) {
+												echo "Deploy Exception: $ex"
+											}
+										}
+									}
+								}
+							}
+						}
+				- totaly manual deploy: for production environment
+					// make selection for build
+					+ create new folder - pipline for production: 	Action-in-prod	-> add pipeline shoeshop -> config as below: -> Save
+						- Max of build: 10
+						- Gitlab connection: using parameters [Choice params: Name=server, Choices=lab-server/server1/server2 (~ jenkin node)]=select Server		[Choice params: Name=Action, Choices=start/stop/restart/update]=select Action
+					//
+					+ install plugin:	Active Choice			// search: Active choice Jenkins			groovy script jenkins				node syntax jenkins
+					+ steps:
+						- script select server						// Active choice parameters
+						- script select action						// Active choice parameters
+						- script chekout code/build/config/run		// clone code, start/stop process, commit hash
+							// checkout
+							stage('checkout-clone') { // sha - tag - 
+								if (params.hash == "") error("Require commit hash for upcode")
+								checkout([$class: 'GitSCM', branches: [[ name: params.hash ]], userRemoteConfigs: [[ credentialsId: 'gitlab-user-account-jenkins', url: gitUrl ]]])		// tool checkout = GitSCM; branch=branch of commit; where=credentials + url
+							}
+							// build
+							// config
+							// run
+							
+						- script rollback						// [create backup folder / run folder]		[backup=zip run folder -> copy .zip to backup folder]		[rollback=unzip file to run folder]
+							+ detemine prev version:			// by prev commit hash -> clone src code cu -> search command: git lock
+								- backup = zip					// Active choice reactive parameters, need libs: hudson.FilePath, jenkins.model.*
+							+ jenkins can't auto approval script: using plugin  Permissive Script Security -> still see the numbers and lists in In-process Script Approval, but Jenkins will bypass it
+							
+								import jenkins.model.*
+								import hudson.FilePath
+
+								backupPath = "/datas/shoeshop/backups/"
+								def node = Jenkins.getInstance().getNode(server)
+								def remoteDir = new FilePath(node.getChannel(), "${backupPath}")
+
+								def files = remoteDir.list()
+								def fileNames = files.collect {it.name}
+
+								if (action == "rollback") return fileNames
+								else return ['ver1', 'ver2']
+						
+						- pipeline script:
+								appUser = "shoeshop"
+								appName = "shoe-ShoppingCart"
+								appVersion = "0.0.1-SNAPSHOT"
+								appType = "jar"
+								processName = "${appName}-${appVersion}.${appType}"
+								folderDeploy = "/datas/${appUser}/run"
+								folderBackup = "/datas/${appUser}/backups"
+								folderMain = "/datas/${appUser}"
+								buildScript = "mvn clean install -DskipTests=true"
+								copyScript = "sudo cp target/${processName} ${folderDeploy}"
+								permsScript = "sudo chown -R ${appUser}:${appUser} ${folderDeploy}"
+								killScript = "sudo kill -9 \$(pgrep -f ${processName})"
+								runScript = "sudo su ${appUser} -c 'cd ${folderDeploy}; pwd; ls -l; whoami; java -jar ${processName} > nohup.out 2>&1 &'"
+								gitUrl = "http://gitlab.devops.com/shoeshopgroup/shoeshop.git"
+
+								def getProcessId() {
+									def pId = sh(returnStdout:true, script: """ pgrep -f ${processName} """, label: "get pId")
+									// def pId = sh(returnStdout:true, script: """ ps -ef| grep ${processName}| grep -v grep| awk \'{print \$2}\' """, label: "get pId")
+								}
+
+								def startProcess() {
+									stage('start-run-process') {
+										sh(script: """ ${runScript} """, label: "run the project")
+										echo "get PID start"
+										sleep 10
+										def pId = getProcessId()
+										if ("${pId}" == "") {
+											error("Can not start process without pId")
+										}
+										echo("${appName} with server " + params.server + " started")
+									}
+								}
+
+								def stopProcess() {
+									stage('stop-process') {
+										def pId = getProcessId()
+										if (pId != "") sh(script: """ sudo kill -9 ${pId} """, label: "kill process")
+										echo("${appName} with server " + params.server + " stopped")
+									}
+								}
+
+								def upcodeProcess() {   // clone src code - build - config - run
+									stage('checkout-clone') { // sha - tag - 
+										if (params.hash == "") error("Require commit hash for upcode")
+										checkout([$class: 'GitSCM', branches: [[ name: params.hash ]], userRemoteConfigs: [[ credentialsId: 'gitlab-user-account-jenkins', url: gitUrl ]]])
+									}
+									stage('build') {
+										sh(script: """ ${buildScript} """, label: "build the project")
+									}
+									
+									stage('config') {
+										sh(script: """ ${copyScript} """, label: "copy .jar file to deploy folfer")
+										sh(script: """ ${permsScript} """, label: "assign project permission for user shoeshop")
+									}
+								}
+
+								def backupProcess() {
+									stage('backup') { // appName_yyyyddmm_hhmm_hashCommit.zip
+										def timeStamp = new Date().format("yyy-dd-mm_HH-mm")
+										def zipFileName = "${appName}_${timeStamp}.zip"
+										sh(script: """ sudo su ${appUser} -c "cd ${folderMain}; zip -jr ${folderBackup}/${zipFileName} ${folderDeploy}" """, label: "zip run folder for backup old version") // -r=folder; -j=latest subFolder in folderBackup=backups
+									}
+								}
+
+								def rollbackProcess() {
+									stage('rollback') {
+										sh(script: """ sudo su ${appUser} -c "cd ${folderDeploy}; rm -rf *" """, label: "delete current version")
+										sh(script: """ sudo su ${appUser} -c "cd ${folderBackup}; unzip ${params.rollback_version} -d ${folderDeploy}" """, label: "rollback verion - ${params.rollback_version}")
+									}
+								}
+
+								node(params.server) {
+									currentAction = params.action
+									echo "action ${currentAction}"
+									if (currentAction == "start") startProcess()
+									if (currentAction == "stop") stopProcess()
+									if (currentAction == "upcode") {
+										backupProcess()
+										stopProcess()
+										currentBuild.description = "server " + params.server + " upcode with hash " + params.hash
+										upcodeProcess()
+										echo "${currentBuild.description}"
+										startProcess()
+									}
+									if (currentAction == "rollback") {
+										backupProcess()
+										stopProcess()
+										rollbackProcess()
+										startProcess()
+									}
+								}
+					
 		// 1. kết nối jenkins-server đến lab-server: 		jenkins Agent
 		// 2. kết nối jenkins-server đến gitlab-server: 	plugin-gitlab & BlueOcen
 	
 	1.6. Monitoring
-	
+
+2. Jenkins:
+	2.1.
+	2.2.
+	2.3.
+	2.4.
+	2.5.
+	2.6. Managing Jenkins
+		2.6.1.
+		.....
+		2.6.8. In-process Script Approval:
+			+ allow users to execute Groovy scripts in Jenkins, which are provided by: Script Console / Jenkins Pipeline / Extended Email plugin / Groovy plugin ["Execute system Groovy script" step] / JobDSL plugin [v1.60+]
+			+ This protection is provided by the Script Security plugin: 2 way
+				 - Groovy Sandbox: 	defalut
+				 - Script Approval: unsandboxed scripts or allow sandboxed scripts to execute additional methods
+			
+			+ Groovy sandbox:
+				- 
+
+
+
+
 
 https://www.baeldung.com/linux/virtualbox-ping-guest-machines
 
