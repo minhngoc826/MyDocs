@@ -95,7 +95,7 @@
 			- Ram/Cpu usage:
 				+ free -m	: ram usage
 				+ df -h / 	: cpu usage
-				+ top:		task manager
+				+ top		: task manager
 				
 			- Server:
 				+ sudo hostnamectl set-hostname newName
@@ -112,9 +112,9 @@
 				+ ps -ef| grep shoeshop				(ps -ef: output của câu trước là input của câu sau;		grep xxx: tìm kiếm)
 			
 			- Internet:
-				+ ping 8.8.8.8: 				= ping google.com
-				+ telnet IP port:				check connect to other server
-				+ traceroute -T -p port IP: 	check port open or not (-T = tcp connection, -p = port)
+				+ ping 8.8.8.8	 				= ping google.com
+				+ telnet IP port				check connect to other server
+				+ traceroute -T -p port IP	 	check port open or not (-T = tcp connection, -p = port)
 		
 		+ Vim editor:
 			- vi filePath: mở file để edit, chưa có file thì tự tạo file mới
@@ -880,30 +880,33 @@
 								}
 								stage('deploy') {
 									steps {
-										sh(script: """ ${copyScript} """, label: "copy jar file")
-										sh(script: """ ${permsScript} """, label: "set permission")
-										sh(script: """ ${killScript} """, label: "kill old processName")
-										sh(script: """ ${deployScript} """, label: "deploy app")
-										/////////// Delivery //////////////////////////////////
-										script {
-											try {
-												timeout(time: 5, unit: 'MINUTES') {
-													evn.userChoice = input message: "Do you want to deploy this?", parameters: [choice(name: 'deploy', choices: 'no\nyes', description: 'Choose "yes" to deploy')]
-												}
-												echo "Check choice: $env.userChoice"
-												if (evn.userChoice == 'yes') {
-													sh(script: """ ${copyScript} """, label: "copy jar file")
-													sh(script: """ ${permsScript} """, label: "set permission")
-													sh(script: """ ${killScript} """, label: "kill old processName")
-													sh(script: """ ${deployScript} """, label: "deploy app")
-												} else {
-													echo "User do not confirm the deployment!"
-												}
-											} catch(Exception ex) {
-												echo "Deploy Exception: $ex"
+										///////////////////// Automatically deploy - CDeployment ////////////////////////////////////
+									sh(script: """ ${copyScript} """, label: "copy jar file")
+									sh(script: """ ${permsScript} """, label: "set permission")
+									sh(script: """ ${killScript} """, label: "kill old processName")
+									sh(script: """ ${deployScript} """, label: "deploy app")
+									///////////////////// Automatically deploy - CDeployment ////////////////////////////////////
+									
+									///////////////////// Ask before deploy - CDelivery ///////////////////////////////////////
+									script {
+										try {
+											timeout(time: 5, unit: 'MINUTES') {
+												evn.userChoice = input message: "Do you want to deploy this?", parameters: [choice(name: 'deploy', choices: 'no\nyes', description: 'Choose "yes" to deploy')]
 											}
+											echo "Check choice: $env.userChoice"
+											if (evn.userChoice == 'yes') {
+												sh(script: """ ${copyScript} """, label: "copy jar file")
+												sh(script: """ ${permsScript} """, label: "set permission")
+												sh(script: """ ${killScript} """, label: "kill old processName")
+												sh(script: """ ${deployScript} """, label: "deploy app")
+											} else {
+												echo "User do not confirm the deployment!"
+											}
+										} catch(Exception ex) {
+											echo "Deploy Exception: $ex"
 										}
 									}
+									///////////////////// Ask before deploy - CDelivery ///////////////////////////////////////
 								}
 							}
 						}
@@ -923,8 +926,9 @@
 					
 					[Install]
 					WantedBy=multi-user.target							# can run by multi-user
+			
 			+ CDelivery:
-				- approved deploy:	
+				- approved deploy:	ask for deploy
 						pipeline {
 							agent {
 								label 'lab-server-node-label'
@@ -960,45 +964,38 @@
 								}
 							}
 						}
+				
 				- totaly manual deploy: for production environment
 					// make selection for build
 					+ create new folder - pipline for production: 	Action-in-prod	-> add pipeline shoeshop -> config as below: -> Save
 						- Max of build: 10
-						- Gitlab connection: using parameters [Choice params: Name=server, Choices=lab-server/server1/server2 (~ jenkin node)]=select Server		[Choice params: Name=Action, Choices=start/stop/restart/update]=select Action
-					//
-					+ install plugin:	Active Choice			// search: Active choice Jenkins			groovy script jenkins				node syntax jenkins
-					+ steps:
-						- script select server						// Active choice parameters
-						- script select action						// Active choice parameters
-						- script chekout code/build/config/run		// clone code, start/stop process, commit hash
-							// checkout
-							stage('checkout-clone') { // sha - tag - 
-								if (params.hash == "") error("Require commit hash for upcode")
-								checkout([$class: 'GitSCM', branches: [[ name: params.hash ]], userRemoteConfigs: [[ credentialsId: 'gitlab-user-account-jenkins', url: gitUrl ]]])		// tool checkout = GitSCM; branch=branch of commit; where=credentials + url
-							}
-							// build
-							// config
-							// run
-							
+						- Gitlab connection: This project is parameterized [Choice params: Name=server, Choices=lab-server/server1/server2 (~ jenkin node)]=select Server		[Choice params: Name=Action, Choices=start/stop/restart/update]=select Action
+							+ install plugin:	Active Choice			// search: Active choice Jenkins			groovy script jenkins				node syntax jenkins
+						- Pipeline: Pipeline script
+					
+					// Gitlab connection: using parameters with plugin: Active Choice
+					+ steps:	typing script as below with option "Use Groovy Sandbox"typing script as below with option "Use Groovy Sandbox"
+						- script select server						// Active choice parameters				// script: return ['lab-server-node', 'lab-server-node-name-1', 'lab-server-node-name-2'] - array
+						- script select action						// Active choice parameters				// script: return ['start', 'stop', 'upcode', 'rollback] - array
+						- string parameters							// for git commit hash to clone code
 						- script rollback						// [create backup folder / run folder]		[backup=zip run folder -> copy .zip to backup folder]		[rollback=unzip file to run folder]
 							+ detemine prev version:			// by prev commit hash -> clone src code cu -> search command: git lock
 								- backup = zip					// Active choice reactive parameters, need libs: hudson.FilePath, jenkins.model.*
 							+ jenkins can't auto approval script: using plugin  Permissive Script Security -> still see the numbers and lists in In-process Script Approval, but Jenkins will bypass it
-							
-								import jenkins.model.*
-								import hudson.FilePath
+									import jenkins.model.*
+									import hudson.FilePath
 
-								backupPath = "/datas/shoeshop/backups/"
-								def node = Jenkins.getInstance().getNode(server)
-								def remoteDir = new FilePath(node.getChannel(), "${backupPath}")
+									backupPath = "/datas/shoeshop/backups/"
+									def node = Jenkins.getInstance().getNode(server)					// server = server-node-name [not label]
+									def remoteDir = new FilePath(node.getChannel(), "${backupPath}")
 
-								def files = remoteDir.list()
-								def fileNames = files.collect {it.name}
+									def files = remoteDir.list()
+									def fileNames = files.collect {it.name}
 
-								if (action == "rollback") return fileNames
-								else return ['ver1', 'ver2']
+									if (action == "rollback") return fileNames
+									else return ['ver1', 'ver2']
 						
-						- pipeline script:
+						- pipeline script:					chekout-clone code/build/config/run
 								appUser = "shoeshop"
 								appName = "shoe-ShoppingCart"
 								appVersion = "0.0.1-SNAPSHOT"
@@ -1026,7 +1023,7 @@
 										sleep 10
 										def pId = getProcessId()
 										if ("${pId}" == "") {
-											error("Can not start process without pId")
+											error("Can not start process")
 										}
 										echo("${appName} with server " + params.server + " started")
 									}
@@ -1043,7 +1040,7 @@
 								def upcodeProcess() {   // clone src code - build - config - run
 									stage('checkout-clone') { // sha - tag - 
 										if (params.hash == "") error("Require commit hash for upcode")
-										checkout([$class: 'GitSCM', branches: [[ name: params.hash ]], userRemoteConfigs: [[ credentialsId: 'gitlab-user-account-jenkins', url: gitUrl ]]])
+										checkout([$class: 'GitSCM', branches: [[ name: params.hash ]], userRemoteConfigs: [[ credentialsId: 'gitlab-user-account-jenkins', url: gitUrl ]]])		 // tool checkout = GitSCM; branch=branch of commit; where=credentials + url
 									}
 									stage('build') {
 										sh(script: """ ${buildScript} """, label: "build the project")
@@ -1057,7 +1054,7 @@
 
 								def backupProcess() {
 									stage('backup') { // appName_yyyyddmm_hhmm_hashCommit.zip
-										def timeStamp = new Date().format("yyy-dd-mm_HH-mm")
+										def timeStamp = new Date().format("yyyy-mm-dd_HH-mm")
 										def zipFileName = "${appName}_${timeStamp}.zip"
 										sh(script: """ sudo su ${appUser} -c "cd ${folderMain}; zip -jr ${folderBackup}/${zipFileName} ${folderDeploy}" """, label: "zip run folder for backup old version") // -r=folder; -j=latest subFolder in folderBackup=backups
 									}
@@ -1090,12 +1087,39 @@
 										startProcess()
 									}
 								}
-					
+					+ Build with parameters: 
+						- select server, select action, input commit hash
+						- need approve libs in "Script Approval" if script import some libs
+						- click "Build" button to start pipeline
+						
 		// 1. kết nối jenkins-server đến lab-server: 		jenkins Agent
 		// 2. kết nối jenkins-server đến gitlab-server: 	plugin-gitlab & BlueOcen
 	
 	1.6. Monitoring
-
+		- search logs from file: 
+			+ tail -n 5000 logFile
+			+ grep keyWord logFile
+		
+		- Monitoring: 						CPU/RAM/Storage usage, SQL command ngốn CPU/RAM -> optimize, số lượng connection có vượt ngưỡng hay ko, server khả dụng hay ko		-> thiết lập ngưỡng cảnh báo
+		- Tools monitoring open source:		ILKStack, Romikius, KaFla, Zabbix, Loki, Datadoc, LazyHost, Splug, ...
+		- Zabbix:
+			+ template sẵn nhiều, ko cần biết chuyên sâu vẫn đảm bảo vận hành/cảnh báo tốt
+			+ warning nhiều type: server lỗi, service lỗi, high cpu/ram/storage, mạng chậm, db chậm, ... với ít thông số cần tùy chỉnh
+			+ tích hợp với nhiều nền tảng thông báo để thông báo kịp thời:  tele, slack, email
+			+ Tích hợp cả chuông cảnh báo tùy theo mức độ nghiêm trọng: thiết lập riêng 1 màn hình + 1 loa cảnh báo cho zabbix
+			
+			+ nhược điểm ~ :	cần nhiều time & kinh nghiệm tìm hiểu thêm tính năng
+				- biểu diễn các thông số dạng biểu đồ
+				- lưu lại lịch sử cảnh báo những khi nào
+				- làm sao để monitoring nhiệt độ, độ ẩm, server khác hay webservice bất kì
+			
+			+ install:
+				+ zabbix server: 
+					- zabbix backend:
+					- zabbix database:	MySQL / PostgreSQL
+					- zabbix frontend:	nginx / apache
+						+ webserver: nginx, apache [httpd.service], tomcat
+				+ zabbix agent: 
 2. Jenkins:
 	2.1.
 	2.2.
@@ -1114,8 +1138,266 @@
 			+ Groovy sandbox:
 				- 
 
-
-
+//////  KUBERNETES  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+0. Kubernetes:
+	- Ưu điểm:
+		+ CI/CD project nhẹ nhàng hơn
+		+ project đạt zero runtime mà ít tốn công, ít rủi ro nhất
+	- Roadmap:
+		+ Devops = Development + Operations: 2 cert cho developer & operator
+		+ Kubernetes:	2 hướng 
+			- Triển khai project trên Kubernetes:	back-front + db
+			- Vận hành hạ tầng trên Kubernetes:   
+	- Require resource:
+		+ On-premise:	16GB Ram / 6 Core CPU / 80G Disk		// server cụm Kubernetes, server loadBalancer, DB
+		+ Cloud:		Google Cloud plaform / AWS / ASURE
+		
+	- Kubernetes: K8s
+		+ nền tảng open source (Google open 2014), mở rộng để quản lya các ứng dụng được đóng gói và các service, giúp thuận lợi cho cấu hình và tự động hóa việc triển khai các ứng dụng.
+		+ Deploy project:
+			- Older:	triển khai trực tiếp trên 1 máy chủ vật lý -> khó phân chia tài nguyên sử dụng nhiều/ít của các dự án trong 1 máy chủ -> khắc phục = cách chạy mỗi dự án trên 1 máy chủ -> tốn chi phí duy trì máy chủ, ko mở rộng đc quy mô
+			- Old:		sử dụng máy ảo, triển khai mỗi dự án trên 1 máy chủ ảo -> tiêu tốn tài nguyên, khó tinh chỉnh cấu hình
+			- New:		Container:	cấp tài nguyên tối thiểu cho mỗi container -> rành mạch & tối ưu hóa tài nguyên, nhưng: Backup, fix lỗi, tăng giảm tài nguyên khi lượng user tăng cao, quản lý giá trị quan trọng đều phải làm = tay -> rủi ro vì con người vận hành khác nhau
+			- Now:		K8S: khắc phục hầu hết vấn đề, tự động backup, sửa lỗi, tăng giảm tài nguyên phù hợp, quản lý chuyên nghiệp và tường minh các giá trị = set lệnh [human] + mornitoring[K8S] để thực thi lệnh[K8S]
+		
+		+ Khi nào nên sử dụng:	4 yếu tố Hiệu quả / Minh bạch / Có khả năng vận hành / Tối ưu chi phí
+			- dự án lớn, dự án chạy đường dài
+			- dự án có nhu cầu cao Scaling
+			- cần triển khai đa môi trường
+			- Mô hình Microservices
+			- cần khả năng tự hồi phục (Self-Healing)  - gitops
+			
+		+ Arichitect:
+			- Nodes: 		list node
+				+ Node:		// ~CRI
+					+ pods: list pod
+						- pod:			pod là đơn vị nhỏ nhất trong cụm K8S = Cluster, mỗi pod có 1/nhiều container				(pod = nhân viên, container=skill/task)
+					+ kubelet:			nhận yc từ kube-api-server để thực thi các pod trên node									(trưởng phòng -> nhận task từ kube-api-server và giao/giám sát task cho nhân viên)
+					+ kube-proxy:		thành phần network chạy trên mỗi node, cho phép các pod giao tiếp với nhau và với bên ngoài (coor - quan hệ công chúng / kết nối nhân nhân sự / nv giao hàng)
+			
+			- cloud-control-manager:	kết nối với cloud provide api và kube-api-server											(tổng giám đốc)
+			- kube-api-server:			là 1 api để có 1 quy chuẩn chung để giao tiếp giữa ngoài vào trong cụm 						(on-premise thì ko có cloud -> kube-api-server chính là giám đốc luôn)
+			- etcd:						csdl phân tán, nơi lưu trữ mọi cấu hình cụm K8S [tất cả các trạng thái của pod, node, resource] (kho lưu trữ / giấy tờ, sp)
+			- scheduler:				phân phối pod đến các node trong cluster dựa trên các yc resource / policy / yc khác = thuật toán lập lịch để tối ưu workload = tìm ra node phù hợp nhất để đưa pod lên // deploy 1 pod lên 1 node = deploy dự án lên 1 server
+			- controler manager:		quản lý các controller là những tiến trình giám sát trạng thái cluster và sửa chữa nếu cần [sửa: tạo ra 1 pod mới thay thế]
+			
+			+ Cluster architect:		cụm
+				- kube-api-server  <---   Nodes [node: kube-api-server <--- kubelet ---> pod	 	/ 		kube-api-server <--- kube-proxy ---> pod]
+				// Control-plane
+				- kube-api-server  <---   etcd
+				- kube-api-server  <---   scheduler [kube-scheduler]
+				- kube-api-server  <---   controller manager [kube-control-manager]
+				- kube-api-server  <--->  cloud-control-manager	---> [Cloud provider api - not in Cluster]
+				
+		+ Install K8S Cluster: 			Cloud/On-premise -> 40 cách cài đặt khác nhau -> chọn cách phù hợp		// how many way are there to install Kubernetes
+			- Auto:		kops / RKE / kubespray		// 1 vài click là xong, install nhanh
+							+ kubespray ko đảm bảo rằng có version mới nhất do bên t3 phát triển, phải đợi phiên bản mới nhất cập nhật thì spray mới cập nhật đc
+							+ RKE (google):
+			- Manual:	Kubeadm						// rành mạch từng bước, các command rất cụ thể -> khi có lỗi dễ debug và dễ nâng cấp lên ver mới nhất
+				- K3S: phiên bản rút gọn của K8S
+				- Cụm K8S với 3 server (3 node) là tối thiểu = 1 control-plane + 2 worker (2 nodes)		// control-plane = node master: mặc định ko deploy dự án lên đó -> ảnh hưởng đến các cv điều phối của master
+				- startup / dự án nhỏ / dev env / staging env / demo: 3 node = 3 control-plane = 3 worker
+							
+		+ Install K8S Cluster: On-premise		[hiểu đc K8S có j, cần j / các mô hình K8S adapter / làm sao đề xuất 1 node lên làm master] 			https://www.fortaspen.com/install-kubernetes-containerd-ubuntu-linux-22-04/		
+			- tạo 3 server: 2cpus, 3-4GB ram -> change IP, hostname -> add hosts for 3 server -> tạo snapshoot cho cả 3
+			//////////////////////
+			- tạo user devops -> add group sudo cho user devops để có quyền thực thi: 		adduser devops		->		usermod -aG sudo devops		-> su devops
+			- update ubuntu cho cả 3:	sudo apt update -y && sudo apt upgrade -y
+			- Deactivate swap: off swap do k8s yêu cầu, nếu ko thì ko kết nối tới api đc
+				+ sudo swapoff -a		// off tạm thời	>< Vĩnh viễn: cat /etc/fstab	-> 	comment line: /swap.img		=  sudo sed -i '/swap.img/s/^/#/' /etc/fstab	// Kubernetes won’t work with ‘swap’ (using disk as an extension of memory) active
+			- Linux Kernel Modules:			// tạo file k8s.conf để active 2 linux kernel module: overlay, br_netfilter		// list module: lsmod		// check module active: lsmod| grep overlay/br_netfilter
+				+ sudo tee /etc/modules-load.d/k8s.conf <<EOF										
+						overlay							
+						br_netfilter
+						EOF
+					-> active module: sudo modprobe overlay br_netfilter
+			- Update Kernel Networking Config:							// We need to set a few configuration parameters so that the Linux kernel correctly deals with bridged traffic.		-> test: sudo sysctl --system
+				+ cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+				net.bridge.bridge-nf-call-iptables  = 1
+				net.bridge.bridge-nf-call-ip6tables = 1
+				net.ipv4.ip_forward                 = 1
+				EOF
+			
+			//////////////
+			- Install Kubernetes Software: by kubeadm	- There are three packages to be installed
+				+ kubeadm – installation and admin tool
+				+ kubelet – main Kubernetes linux service/daemon
+				+ kubectl – command line tool for controlling a Kubenetes cluster
+				
+				# make sure you have the necessary tools
+				sudo apt-get install -y apt-transport-https ca-certificates curl
+				# download the keyring for validating the downloads
+				sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+				# add the kubernetes.io repository to the local server’s list and trust the keyring
+				echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+				# refresh local respository list
+				sudo apt-get update
+				# install kubelet kubeadm kubectl
+				sudo apt-get install -y kubelet kubeadm kubectl
+				# prevent automatic updates (which may upset versioning)
+				sudo apt-mark hold kubelet kubeadm kubectl							// hold version of package, nếu ko hold thì khi update sẽ có package đc update hoặc ko, dẫn đến lệch version -> lỗi cả cụm
+				
+			- install container runtime: containderd của google [hoặc docker]:		sudo apt-get install -y containerd		// (Don’t use the “containerd.io” package used by Docker – this does not include the cri plugin necessary for working directly with Kubernetes. “ctr plugins ls” should include a plugin with ID “cri”.)
+			/////////////////////////
+			
+			///////////// devopsedu.vn //////////// 	Thực hiện trên cả 3 servers
+			Thêm hosts
+				# vi /etc/hosts/
+				192.168.1.111 k8s-master-1
+				192.168.1.112 k8s-master-2
+				192.168.1.113 k8s-master-3
+			Cập nhật và nâng cấp hệ thống
+				# sudo apt update -y && sudo apt upgrade -y
+			Tạo user devops và chuyển sang user devops
+				# adduser devops
+				# su devops
+				# sudo usermod -aG sudo devops
+				# cd /home/devops
+			Tắt swap
+				# sudo swapoff -a
+				# sudo sed -i '/swap.img/s/^/#/' /etc/fstab
+			Cấu hình module kernel
+				# vi /etc/modules-load.d/containerd.conf
+			Nội dung sau:
+				overlay
+				br_netfilter
+			Tải module kernel
+				# sudo modprobe overlay
+				# sudo modprobe br_netfilter
+			Cấu hình hệ thống mạng
+				# echo "net.bridge.bridge-nf-call-ip6tables = 1" | sudo tee -a /etc/sysctl.d/kubernetes.conf
+				# echo "net.bridge.bridge-nf-call-iptables = 1" | sudo tee -a /etc/sysctl.d/kubernetes.conf
+				# echo "net.ipv4.ip_forward = 1" | sudo tee -a /etc/sysctl.d/kubernetes.conf
+			Áp dụng cấu hình sysctl
+				# sudo sysctl --system
+			Cài đặt các gói cần thiết và thêm kho Docker
+				# sudo apt install -y curl gnupg2 software-properties-common apt-transport-https ca-certificates
+				# sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmour -o /etc/apt/trusted.gpg.d/docker.gpg
+				# sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+			Cài đặt containerd
+				# sudo apt update -y
+				# sudo apt install -y containerd.io
+			Cấu hình containerd
+				# containerd config default | sudo tee /etc/containerd/config.toml >/dev/null 2>&1
+				# sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/g' /etc/containerd/config.toml
+			Khởi động containerd
+				# sudo systemctl restart containerd
+				# sudo systemctl enable containerd
+			Thêm kho lưu trữ Kubernetes
+				# echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+				# curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.32/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+			Cài đặt các gói Kubernetes
+				# sudo apt update -y
+				# sudo apt install -y kubelet kubeadm kubectl
+				# sudo apt-mark hold kubelet kubeadm kubectl
+			
+			////////// Xem tiếp bài giảng để cài đặt K8s cluster phù hợp (xác định mô hình cụm cần cài đặt và reset cụm nếu cài không như mong muốn)
+			Mô hình đầu tiên:  1 master 2 worker
+				Thực hiện trên server k8s-master-1
+					# sudo kubeadm init						-> các node khác join vào master: 	sudo kubeadm join 192.168.56.70:6443 --token your_token --discovery-token-ca-cert-hash your_sha --control-plane --certificate-key your_cert
+					# mkdir -p $HOME/.kube
+					# sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+					# sudo chown $(id -u):$(id -g) $HOME/.kube/config
+					# kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/calico.yaml		// cài network cho cụm
+				Thực hiện join trên server k8s-master-2 và k8s master-3
+					# sudo kubeadm join 192.168.56.70:6443 --token your_token --discovery-token-ca-cert-hash your_sha
+					
+			Mô hình thứ hai: 3 master (worker) – xem video bài giảng để hiểu
+				Thực hiện trên server k8s-master-1
+					# sudo kubeadm init --control-plane-endpoint "192.168.1.111:6443" --upload-certs
+					# mkdir -p $HOME/.kube 
+					# sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config 
+					# sudo chown $(id -u):$(id -g) $HOME/.kube/config
+					# kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/calico.yaml		// cài network cho cụm
+				Thực hiện trên server k8s-master-2 và k8s-master-3
+					# sudo kubeadm join 192.168.1.111:6443 --token your_token --discovery-token-ca-cert-hash your_sha --control-plane --certificate-key your_cert
+					# mkdir -p $HOME/.kube 
+					# sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config 
+					# sudo chown $(id -u):$(id -g) $HOME/.kube/config
+				//////// đến đây cả 3 node đều có role control-plane
+				Set role worker cho 3 node:		chạy 3 lần cho 3 node, chạy trên node 1 (có init)
+					# kubectl taint nodes k8s-master-1/2/3 node-role.kubernetes.io/control-plane:NoSchedule-
+				
+			Khối lệnh reset cụm khi đã khởi tạo cụm:	chạy trên tất cả các node / server
+				# sudo kubeadm reset -f
+				# sudo rm -rf /var/lib/etcd
+				# sudo rm -rf /etc/kubernetes/manifests/*
+			//////////////////////////////////
+		
+		+ Install K8S Cluster: On Cloud [Google Cloud Plaform - GCP - 300$ free for 3 month]
+			- Login GCP -> Menu -> Kubernetes Engine -> Clusters: Create -> Standard (Tự quản lý):			// Auto: Google quản lý cluster
+				+ Cluster basic:
+					- Name:				đặt tên theo dự án & môi trường, có thể dùng tên cty và nên tạo 1 cụm to để triển khai các dự án ở trên các môi trường khác nhau
+					- Location type:	nơi đặt cluster -> giá thay đổi theo location
+					- Release Channel of GKE:  chọn channel phát hành cho các phiên bản k8s cho cluster = chiến lược để nâng cấp cụm k8s giúp cân bằng giữa các tính khả dụng của các năng mới và tính ổn định
+						- Rapid:	 	luôn sd new feature GKE release nhưng có thể ko ổn định như các channel khác do mới
+						- Regular:		balance tính năng mới vs tính ổn định, và đc cập nhật các tính năng mới có kiểm soát
+						- Stable:		ưu tiên cho production, cần tính ổn định hơn là mới
+						- Extended:		giữ nguyên 1 version trong 1 time dài, ngay cả khi version đó đã hết time hỗ trợ chuẩn, ko cập nhât cụm k8s lên version mới -> chỉ nên sd cho các cụm ít thay đổi và có độ ổn định cao, hoặc đặc thù ứng dụng & tools trên cụm đó
+						- No channel:	not recommend -> có thể tắt tự động cập nhật -> có thể bị lỗi do ko đồng nhất phiên bản, quản lý khó khăn hơn và đội chi phí
+				+ Fleet registration:	gom nhóm cụm và quản lý các cụm k8s theo nhóm -> multi-cluster: áp dụng policy đồng nhất cho từng nhóm, dễ quản lý và vận hành hơn
+				+ default-pool:			
+					- Name:
+					- Compact placement:	các cụm đc để gần nhau -> data center
+					- Queued ...:			sd tính năng xếp hàng để cung cấp các node trong pool linh hoạt hơn	 -> dựa trên nhu cầu và công suất tải của task -> cho phép tự động điều chỉnh tài nguyên khi khối lượng cv thay đổi
+					- Size:					số lượng node
+					- Automation:			
+						+ Automatically upgrade ...:	tự động upgrade các node lên version mới nhất khi có sẵn theo version mới của control-plane, nhưng có thể gây lỗi [github-runner k8s bị lỗi die by line khi ci-cd trên k8s cloud]
+						+ Auto repair:					tự động fix khi node gặp vấn đề như ko phản hồi, ... ko đảm bảo tính ổn định của cụm
+					- Node pool upgrade strategy:		
+						+ Surge upgrade:				tạo ra 1 node mới tương tự join vào cụm, rồi upgrade từng node
+						+ Blue-green upgrade:			tạo nguyên 1 cụm mới giống cụm hiện tại và chuyển resource sang cụm mới						-> chi phí cao hơn
+					- Nodes:							
+						+ Image type:					chọn cấu hình server từng node ->  ubuntu with container
+						+ Machine configuration:		chọn phần cứng cho từng node:	cpu, ram, gpu(VRAM) for ML/AI -> using as recommend
+					- Networking:						recommend, cần biết / bao nhiêu, khoảng CIDR là j?
+					- Security:							recommend, production cần kiểm soát chặt, access vào ra của bất cứ traffic nào
+					- Metadata:							
+						+ Kubernetes label:				key-value = env-development, nên gán nhãn rõ ràng cho từng cụm
+						+ Node taint:					đánh dấu node để hạn chế việc gán port ko phù hợp -> quản lý và tối ưu hóa việc triển khai workload trên các node
+				+ Cluster:
+					- Backup plane:						enable ...
+					- Feature:							default
+				-> create
+				
+			+ View cluster vừa tạo -> Connected: google tụ động điền command kết nối -> Enter là vào đc k8s
+		
+1. Triển khai project thực tế:			full stack back-front + db -> ra cách làm
+	1.1. Quy trình triển khai			// roadmap.sh		// search: kubernetes flow, 2 flow: architecture flow / deploy flow
+		+ Traffic -> Ingress [domain1, domain2] -> Service [service1, service2] -> [ Node: [pod1, pod2], Node[pod11, pod12] ]
+		+ File yaml:			// key: value				// k8s có support json nhưng ít dùng hơn yaml
+			- Cú pháp đơn giản
+			- Định dạng phong phú
+			- Cấu trúc rõ ràng
+			- cộng đồng lớn
+			- syntax:
+					key: value
+					list:
+						- element1
+						- element2
+					map:
+						key1: value1
+						key2: value2
+					# comment
+					listOfMap:
+						- key1: value1
+						  key2: value2
+						- key3: value3
+						  key4: value4
+			- Keys:
+				+ apiVersion: 	format=group:version	// 1 số resource: port, service, config map nằm trong nhóm cốt lõi của k8s, vì vậy chỉ cần có version mà ko cần có group
+				+ kind:			khai báo các tài nguyên:	Pod/Service/Secret/ConfigMap/Ingress/Deployment/StatefulSet/DaemonSet/PersistentVolume/PersistentVolumeClaim
+				+ metadata:		chứa thông tin liên quan đến resources:	name/labels/namespace/annotations
+				+ spec:			định nghĩa thông tin chi tiết cấu hình của resource tùy theo kind: [pod: spec của container in pod], [Deployment: spec của pod/template/jdk]
+				
+		+ Namespace: chia nhóm node trong k8s để dễ quản lý và phân chia tài nguyên
+			- 
+2. Xây dựng công cụ dự án:				db, message, cache	-> dảm bảo data & tối ưu
+3. Giám sát và quản trị Kubernetes:		monitoring dự án, hạ tầng server, uptime, backup & restore trên cụm Kubernetes
+4. 
+5.
+6.
+//////  KUBERNETES  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 https://www.baeldung.com/linux/virtualbox-ping-guest-machines

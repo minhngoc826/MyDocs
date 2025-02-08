@@ -1,4 +1,4 @@
-///////////////////	Home //////////////////////////////////////////////////////////////////
+///////////////////	Home ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Name						IP						Domain					Web/Port/Type
 lab-server					192.168.1.10			server.devops.com		todolist:8080/Vuejs:nginx		shoeshop
 git-db-registry-server		192.168.1.20			gitlab.devops.com		gitlab:80						database:3306				registry:5000
@@ -11,20 +11,29 @@ database-server				192.168.56.20:3306		database.devops.com
 gitlab-server				192.168.56.30			gitlab.devops.com
 registry-server				192.168.56.40:5000		registry.devops.com
 jenkins						192.168.56.50			jenkins.devops.com
-desktop						192.168.56.90
-/////////////////////////////////////////////////////////////////////////////////////
+zabbix-server				192.168.56.60
+desktop						192.168.56.100
+
+k8s-70-server				192.168.56.70
+k8s-80-server				192.168.56.80
+k8s-90-server				192.168.56.90
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ssh ngocnm@192.168.1.
 192.168.1.10 server.devops.com
 192.168.1.20 gitlab.devops.com
 192.168.1.30 jenkins.devops.com
-/////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ssh ngocnm@192.168.56.
 192.168.56.10 server.devops.com
 192.168.56.20 database.devops.com
 192.168.56.30 gitlab.devops.com
 192.168.56.40 registry.devops.com
 192.168.56.50 jenkins.devops.com
-/////////////////////////////////////////////////////////////////////////////////////
+
+192.168.56.70 k8s-70-server
+192.168.56.80 k8s-80-server
+192.168.56.90 k8s-90-server
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 1. Project: Envinroment: deployment - staging - prodction
 2. Devops:
 	- Setup Envinroment: 
@@ -32,14 +41,26 @@ ssh ngocnm@192.168.56.
 		+ Setup Manage project: 	Gitlab, Jenkins, Travis, Circle
 		+ CI/CD:					build -> test: 	pef, security, clean code, unit test, pin test ...
 									run: 			deploy
-/////////////////////////////////////////////////////////////////////////////////////
+3. Monitoring:
+	- Internet:
+		+ ping 8.8.8.8	 				= ping google.com
+		+ telnet IP port				check connect to other server
+		+ traceroute -T -p port IP	 	check port open or not (-T = tcp connection, -p = port)
+	- Ram/Cpu usage:
+		+ free -m	: ram usage
+		+ df -h / 	: cpu usage
+		+ top		: task manager
+	- Check logs:
+		+ tail -n 5000 logFile
+		+ grep keyWord logFile
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 0. Virtualbox VM: 				
 	+ shared folder:		E:\VMWare\SharedFolder
 		- VM -> Setting -> SharedFolder -> New -> Select E:\VMWare\SharedFolder -> Mount point: /mnt/share-folder or /home/user/shared-folder 	 & 		Select: Auto mount & Make Permanent
 		- VM:		sudo mount -t vboxsf SharedFolder /mnt/shared-folder
 		- Host: 	copy file to E:\VMWare\SharedFolder		-> ls /mnt/shared-folder
 		- VM:		cp filePath /mnt/shared-folder			-> F5 E:\VMWare\SharedFolder
-/////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 1. Project
 	- install dependencies / tools for project (run & deploy)
 	- set chmod, chowner for user & project
@@ -80,7 +101,7 @@ ssh ngocnm@192.168.56.
 		- spring.datasource.url=jdbc:mysql://<address_server>:<port>/<database_name>//?useSSL=false
 		- spring.datasource.username=<username>
 		- spring.datasource.password=<password>
-/////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 3. Gitlab: gitlab-server
 	- gitlab-ee:
 		+ install: 		google
@@ -93,7 +114,7 @@ ssh ngocnm@192.168.56.
 			- create: 	branch/commit/merge request/
 		
 		+ gitlab secret: ...
-/////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 4. Registry server: docker registry-server
 	+ public: 			dockerhub
 	+ harbor registry: 	harbor							-> manage users, docker [projects, images, and list tags of image] 		->		authenticate by 
@@ -127,28 +148,48 @@ ssh ngocnm@192.168.56.
 			+ 192.168.56.10:5000/v2/_catalog:			// list images on registry									// registry-domain/v2/_catalog ~ registry.devops.com/v2/_catalog
 			+ 192.168.56.10:5000/v2/image/tags/list:	// list tags of image on registry
 		- *** copy cert to any client using registry:	mkdir -p /etc/docker/certs.d/192.168.56.10:5000		----	cp 	/tools/docker/registry/certs/domain.crt /etc/docker/certs.d/192.168.56.10:5000/ca.crt
-//////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 5. Jenkins server:
 	+ install jenkins:		create file: /tools/jenkins/jenkins-install.sh				-> 		run: chmod +x ../jenkins-install.sh (cap quyen execute)				sh/bash ../jenkins-install.sh
 		- add hosts & reverse proxy:	nginx 	& 	nano /etc/nginx/conf.d/jenkins.devops.com.conf	 ---	
 				server { listen 80; server_name jenkins.devops.com; location / { proxy_pass http://jenkins.devops.com:8000; } }
+	
 	+ connect jenkins-server vs lab-server: 	by Jenkins Agent
 		- lab-server:		install java version same jenkins: apt install openjdk-17-jdk / adduser jenkins	/ add jenkinsFolder: /var/lib/jenkins [clone code from gitlab / build / run]
 							-> chown -R jenkins:jenkins /var/lib/jenkins	/ NOPASSWD: visudo for user jenkins
 		- jenkins-server:	add Node [Number of executors 3/4 -- Remote root directory: jenkinsFolder from lab-server] [Add fixed port]	 -> save ->	show command to connect lab-server	-> node not run
 		- lab-server:		su jenkins	-	cd /var/lib/jenkins		-> run commands with secret-file + nohup -> jenkinsFolder: save agent.jar / secret-file
 							java -jar agent.jar -url http://jenkins.devops.com:8080/ -secret @secret-file -name "lab-server-node" -webSocket -workDir "/var/lib/jenkins/" > nohup.out 2>&1 &	-> node start running
+							////
+							make service for auto start jenkins-agent: 			nano /lib/systemd/system/jenkins-agent.service		-> 		systemctl daemon-reload		->		systemctl start jenkins-agent
+								[Unit]
+								Description=Jenkins Agent Service
+								After=network.target								# run service sau khi network dc thiet lap xong
+								[Service]
+								Type=simple
+								WorkingDirectory=/var/lib/jenkins
+								ExecStart=/bin/bash -c 'java -jar agent.jar -url http://jenkins.devops.com:8080/ -secret @secret-file -name "lab-server-node" -webSocket -workDir "/var/lib/jenkins/"'		# command to run jenkins-agent
+								User=jenkins
+								Restart=always										# auto restart if it is stopped								
+								[Install]
+								WantedBy=multi-user.target							# can run by multi-user
+	
 	+ connect jenkins-server vs gitlab-server:	by plugin Gitlab, BlueOcen
 		- gitlab-server:	create user jenkins - admin role		-> 	login by user jenkins		->		Profile: Access Token scope API
-		- jenkins-server:	install plugin: 	Gitlab, BlueOcen	-> 	System -> Gitlab: set name - domain - add API token [Domain: Global  -  Kind: API token  -  Scope: Global/System  -  ID: jenkins-gitlab-user] -> Add -> Test
-		
+		- jenkins-server:	
+			+ install plugin: 			[Gitlab, BlueOcen] -> System -> Gitlab: set name - domain - add API token [Domain: Global  -  Kind: API token  -  Scope: Global/System  -  ID: jenkins-gitlab-user] -> Add -> Test
+			+ create token webhooks:	Account -> Security -> API token: add new token							// 1175600b85cccd7a9dbdf938e4587282a9 - used to add gitlab webhooks
+	
+	+ Script: 	
+		- script có import lib thì lib đó cần đc approve trong "Script Approval", apply từng dòng 1 nên cần run script & F5 liên tục page:  http://jenkins.devops.com/manage/scriptApproval/ 		// nên test script trong "Script console" trước khi đưa vào pipeline
+	
 	+ check log:	By default logs should be made available in /var/log/jenkins/jenkins.log, unless customized in /etc/default/jenkins (for *.deb) or via /etc/sysconfig/jenkins (for */rpm)
 		- java -jar /usr/share/java/jenkins.war			// fail
 		- journalctl -u jenkins.service					// search key
 		- config:	systemctl edit jenkins				// failed: file is not edited			//	[Service]	Environment="JENKINS_LOG=%L/jenkins/jenkins.log"
 	
 	+ config:		/etc/default/jenkins	-> PORT, LOGS
-//////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 6. Deploy servers: lab-server, sub-server, ...												nohub java -jar /run/shoeshop/shoe-ShoppingCart-0.0.1-SNAPSHOT.jar > nohub.out 2>&1 &
 	+ add hosts for gitlab-server, jenkins-server, lab-server, registry-server
 	
@@ -162,6 +203,7 @@ ssh ngocnm@192.168.56.
 			+ gitlab-runner register -> gitlab domain, token (on gitlab-server/project setting), runner name, executor=shell/docker/...
 			+ gitlab-runner run --working-directory /home/gitlab-runner --config ../config.toml --service gitlab-runner --user gitlab-runner > nohup.out 2>&1 &	-> gitlab-runner list	// run = multiple >< run-single
 			+ type: gitlab-runner-shell/docker		/		/home/gitlab-runner/xxx/project: [clone project from gitlab -> build -> run: copy *jar file to other folder "/datas/shoeshop/" & run]
+		
 		- gitlab-server:	develop for gitlab-runner-shell		/		staging for gitlab-runner-docker
 			+ .gitlab-ci.yml: 	creater project/.gitlab-ci.yml	-> stages: [jobs] / variables: [vars] / stage: job / when: manual / script: [commands] / tag: runner-name / only: tags/branch
 				- build stage: 	clone project from gitlab-server to lab-server with path: /home/gitlab-runner/builds/AZxtpzuE/0/shoeshopgroup/shoeshop 
@@ -188,82 +230,37 @@ ssh ngocnm@192.168.56.
 				- Notes:
 					+ voi docker: 	connect toi database nen dung IP, dung domain co the bi loi "java.net.UnknownHostException: database.devops.com: Name does not resolve"
 									docker run da co config -dp (run in background) roi nen trong Dockerfile ko can run backgroud nua (nohup)
-	+ Jenkins CI/CDeployment:
-		- lab-server: 		if node is not running: cd /var/lib/jenkins		-> 		su jenkins		->
-							-> java -jar agent.jar -url http://jenkins.devops.com:8080/ -secret @secret-file -name "lab-server-node" -webSocket -workDir "/var/lib/jenkins/" > nohup.out 2>&1 &	-> node start running
-							-> make service: nano /lib/systemd/system/jenkins-agent.service		-> 		systemctl daemon-reload		->		systemctl start jenkins-agent+
-								[Unit]
-								Description=Jenkins Agent Service
-								After=network.target								# run service sau khi network dc thiet lap xong
-								[Service]
-								Type=simple
-								WorkingDirectory=/var/lib/jenkins
-								ExecStart=/bin/bash -c 'java -jar agent.jar -url http://jenkins.devops.com:8080/ -secret @secret-file -name "lab-server-node" -webSocket -workDir "/var/lib/jenkins/"'		# command to run jenkins-agent
-								User=jenkins
-								Restart=always										# auto restart if it is stopped								
-								[Install]
-								WantedBy=multi-user.target							# can run by multi-user
-								
+	
+	+ Jenkins CI/CDeployment:	need Jenkinsfile in project src code
+		- lab-server: 		if node/jenkins-agent is not running: 	cd /var/lib/jenkins -> su jenkins -> java -jar agent.jar -url http://jenkins.devops.com:8080/ -secret @secret-file -name "lab-server-node" -webSocket -workDir "/var/lib/jenkins/" > nohup.out 2>&1 &	-> node start running
+							-> make service for auto start jenkins-agent: 			nano /lib/systemd/system/jenkins-agent.service		-> 		systemctl daemon-reload		->		systemctl start jenkins-agent
+
 		- jenkins-server:	create Folder & Pipeline of Folder & create token for user jenkins (nên tạo user riêng cho project - ngocnm, token dung tren gitlab)
-			+ Folder:		Dashboard -> New Item -> Folder ->	Action-in-lab-server
-			+ Pipeline:		Dashboard -> Action-in-lab-server folder -> New Item -> Pipeline: name shoeshop	-> config:	[Discard old builds: Max build to keep / Gitlab connection / Build trigger / Branches to build]
-							-> config: [Pipeline:	Pipeline script from SCM -> SCM: Git / Repo Url: http://gitlab.devops.tech/group/shoeshop.git / Credentials: new Jenkins [user-gitlab: jenkins, pass: password]]
-			+ Token:		Account -> Security -> API token: add new token							// 1175600b85cccd7a9dbdf938e4587282a9
+			+ Folder:		Dashboard -> New Item -> Action-in-lab-server [Type: Folder]
+			+ Pipeline:		Dashboard -> Action-in-lab-server -> New Item -> Pipeline: name shoeshop	
+							-> config:	[Discard old builds: Max build to keep / Gitlab connection: gitlab-server / Build trigger: Events push-merge / Pipeline: Pipeline script from SCM [SCM: Git / Script Path: Jenkinsfile] ]
+							-> config:  -> SCM: Git [Repo Url: http://gitlab.devops.tech/group/shoeshop.git  / Credentials: new Jenkins [user-gitlab: jenkins, pass: password / Branches to build: add branches ]
+			+ Token:		Account -> Security -> API token: add new token							// 1175600b85cccd7a9dbdf938e4587282a9 - used to add gitlab webhooks
 		
 		- gitlab-server:	
 			+ Allow Webhooks:	Admin Setting -> Network -> Outbound request:  Allow requests to the local network from webhooks and integrations -> Save
-			+ Add Webhooks:	Project Setting -> Webhooks: [URL:  http://<user jenkins>:<token user jenkins>@<domain jenkins>/project/<path of project on jenkins>]	// http://user:token@jenkins.devops.com/project/Action-in-lab/shoeshop
+			+ Add Webhooks:	Project Setting -> Webhooks: [URL:  http://<user jenkins>:<token webhooks user jenkins>@<domain jenkins>/project/<path of project on jenkins>]	// http://user:token@jenkins.devops.com/project/Action-in-lab/shoeshop
 			+ Add Jenkinsfile for project: groovy syntax
 					pipeline {
-						agent {
-							label 'lab-server-node-label'
-						}
-						environment {
-							appUser = "shoeshop"
-							appName = "shoe-ShoppingCart"
-							appVersion = "0.0.1-SNAPSHOT"
-							appType = "jar"
-							processName = "${appName}-${appVersion}.${appType}"
-							folderDeploy = "/datas/${appUser}"
-							buildScript = "mvn clean install -DskipTests=true"
-							copyScript = "cp target/${processName} ${folderDeploy}"
-							permsScript = "chown -R ${appUser}. ${folderDeploy}"
-							killScript = "sudo kill -9 \$(pgrep -f ${processName})"
-							deployScript = "sudo su ${appUser}; cd ${folderDeploy}; pwd; ls -l; whoami; java -jar ${processName} > nohup.out 2>&1 &"
-						}
+						agent { label 'lab-server-node-label'}
+						environment { appUser = "shoeshop"	/ appName / appversion / appType / processName / folderDeploy / folderBackup / folderMain / buildScript / copyScript / permsScript / killScript / runScript / ... }
 						stages {
-							stage('build') {
+							stage('job-action') {
 								steps {
 									sh(script: """ whoami; pwd; ls -la; ${buildScript} """, label: "show info")
-								}
-							}
-							stage('deploy') {
-								steps {
-									sh(script: """ ${copyScript} """, label: "copy jar file")
-									sh(script: """ ${permsScript} """, label: "set permission")
-									sh(script: """ ${killScript} """, label: "kill old processName")
-									sh(script: """ ${deployScript} """, label: "deploy app")
-									///////////////////// Ask before deploy ////////////////////////////////////
 									script {
 										try {
-											timeout(time: 5, unit: 'MINUTES') {
-												evn.userChoice = input message: "Do you want to deploy this?", parameters: [choice(name: 'deploy', choices: 'no\nyes', description: 'Choose "yes" to deploy')]
-											}
-											echo "Check choice: $env.userChoice"
-											if (evn.userChoice == 'yes') {
-												sh(script: """ ${copyScript} """, label: "copy jar file")
-												sh(script: """ ${permsScript} """, label: "set permission")
-												sh(script: """ ${killScript} """, label: "kill old processName")
-												sh(script: """ ${deployScript} """, label: "deploy app")
-											} else {
-												echo "User do not confirm the deployment!"
-											}
-										} catch(Exception ex) {
-											echo "Deploy Exception: $ex"
-										}
+											if (evn.userChoice == 'yes') { sh(script: """ ${deployScript} """, label: "deploy app") } else { echo "xxx"}
+										} catch (Exception ex) { echo "Deploy Exception: $ex" }
 									}
 								}
 							}
+							stage('job-n') {} ....
 						}
 					}
 			+ CI with Docker:
@@ -272,51 +269,54 @@ ssh ngocnm@192.168.56.
 				- gitlab-server:	
 					+ Dockerfile:	same above
 					+ Jenkinsfile:
-							pipeline {
-								agent {
-									label 'lab-server-node-label'
-								}
-								environment {
-									..............
-								}
-								stages {
-									stage('build') {
-										steps {
-											sh(script: """ whoami; pwd; ls -la; ${buildScript} """, label: "show info")
-										}
-									}
-									stage('deploy') {
-										steps {
-											sh(script: """ ${copyScript} """, label: "copy jar file")
-											sh(script: """ ${permsScript} """, label: "set permission")
-											sh(script: """ ${killScript} """, label: "kill old processName")
-											sh(script: """ ${deployScript} """, label: "deploy app")
-										}
-									}
-								}
-							}
+							
 		- lab-server: Running on lab-server-node in /var/lib/jenkins/workspace/Action-in-lab-server/shoeshop
 	
-	+ Jenkins CI/CDelivery:
-		
-		
-		def remoteDir = new FilePath(node.getChannel(), backupPath)
-
-def files = remoteDir.list()
-def fileNames = files.collect {it.name}
-if (action == "rollback") return fileNames
-else return ['ver11', 'ver22']
+	+ Jenkins CI/CDelivery: 	totaly manual for prod environment
+		- lab-server: 		run jenkins-agent by service as CI/CDeployment
+		- gitlab-server:	not need allow Webhooks & Jenkinsfile as CI/CDeployment					// webhooks need declare working folder like: Action-in-lab-server/shoeshop and need Jenkinsfile in project src code
+		- jenkins-server:	typing scripts as below with option "Use Groovy Sandbox"
+			+ Create new folder for prod:	Dashboard -> New Item -> Action-in-prod [Type: Folder]
+			+ Create pipeline for prod:		Dashboard -> Action-in-prod  -> New Item -> shoeshop [Type: Pipeline]	
+				-> config: [Discard old builds: Max # of builds to keep / GitLab Connection: This project is parameterized -> add params scripts / Pipeline: Pipeline script ] -> Branches to build: branch is added by commit hash in step checkout src code from commit hash in Pipeline script
+				- script select server						// Active choice parameters					// name: server				script: return ['lab-server-node', 'lab-server-node-name-1', 'lab-server-node-name-2'] - array
+				- script select action						// Active choice parameters					// name: action				script: return ['start', 'stop', 'upcode', 'rollback] - array
+				- string parameters							// for git commit hash to clone code		// name: hash
+				- script rollback							// Active choice Reactive parameters		// name: rollback_version	script: [create backup folder / run folder]		[backup=zip run folder -> copy .zip to backup folder]	[rollback=unzip file to run folder]
+			+ pipeline scripts:		params.[server/hash/action/rollback_version]				-> get value from params scripts
+					appUser = "shoeshop"	/ appName / appversion / appType / processName / folderDeploy / folderBackup / folderMain / buildScript / copyScript / permsScript / killScript / runScript / ... 		// declare variables
+					
+					def methodName() {		// def startProcess()		def stopProcess()		def upcodeProcess()		def backupProcess()		def rollbackProcess()
+						def pId = sh(returnStdout:true, script: """ pgrep -f ${processName} """, label: "get pId")
+						stage('jobName') { if (pId == "") {sh(script: """ sudo kill -9 ${pId} """, label: "kill process"} else { echo "pId null" } ... }
+						stage('jobName-2') {} ....
+					}
+					
+					node(params.server) { 	// get correct node for each lab-server by server-node-name, not using node label
+						currentAction = params.action
+						if (params.action == 'rollback') {
+							backupProcess()
+							stopProcess()
+							rollbackProcess()
+							startProcess()
+						}
+						....
+					}
+		- lab-server: Running on lab-server-node in /var/lib/jenkins/workspace/Action-in-prod/shoeshop
 	
 	** Deploy result:
-		+ Gitlab CI/CD:
-			- normal:	server.port=8888													http://192.168.56.10:8888					develop
-			- docker:	server.port=9999				container.port=8080					http://192.168.56.10:9999					staging
+		+ Gitlab CI/CD: auto/manual by [when:manual/always 		only: -tags]
+			- normal:			server.port=8888													http://192.168.56.10:8888					develop					// server.port=8888 in application.properties
+			- docker:			server.port=9999				container.port=8080					http://192.168.56.10:9999					staging					// -dp 9000:8081
 		+ Jenkins CI/CD:
-			- normal:	server.port=8000													http://192.168.56.10:8000					main
-			- docker: 	server.port=9000				container.port=8081					http://192.168.56.10:8000					jenkins
-/////////////////////////////////////////////////////////////////////////////////////
+			// auto: 	CDeployment
+			- normal:			server.port=8000													http://192.168.56.10:8000					main					// server.port=8000 in application.properties
+			- docker: 			server.port=9000				container.port=8081					http://192.168.56.10:9000					docker_deployment		// -dp 9000:8081
+			// manual:	CDelivery
+			- prod:				server.port=7000													http://192.168.56.10:7000					production				// server.port=7000 in application.properties
+			- prod_docker:		server.port=6000				container.port=8082					http://192.168.56.10:6000					prod_docker				// -dp 9000:8082
 
-/////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 7. Docker: on lab-server
 	- install: apt install docker-ce									sh install-docker.sh
 	- docker  login url / pull domain/project/image:tag / 				start containerName / stop / rm / rmi / logs / ps / push domani/project/image:tag
@@ -333,10 +333,33 @@ else return ['ver11', 'ver22']
 		+ Docker volume
 		+ Docker compose
 		+ Docker network
-/////////////////////////////////////////////////////////////////////////////////////
+		
+	- docker system prune: clear stop container / all network not using / dangling images / unused build cache
+	
+	- Tip security / optimize:
+		+ non root user:				-> for security
+		+ chọn base image phù hợp:		->
+			- đúng version /Java 8 		-> nên cài maven java 8 để build & run: tối ưu dung lượng docker image build ra & hạn chế tools ko cần thiết làm tăng size
+			- ubuntu/cenos				-> nên chọn image đc build sẵn dựa trên alpine vì nhẹ và tối ưu - hoặc image slime
+			- base image uy tín			-> nên chọn : offical / verified / sponsored
+			- tool quét image			-> check lỗ hổng
+			
+			- build: clean cached
+		+ use Multiple stage: 			-> giảm size docker image cuối cùng đc build ra
+
+
+	- Optimize docker: https://github.com/ultralytics/ultralytics/issues/8465?fbclid=IwY2xjawIR6hZleHRuA2FlbQIxMAABHcJtI0lk57V-efIZcZe-3gx8D4TAGg7Dzeb8b9fUEQsAMFCGM640bbnFXQ_aem_TrX5CiCCVuOS9dH_PwNnbQ
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 8. Monitoring
-/////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////
+	+ Zabbix
+
+//////  KUBERNETES  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 - Mô hình CI/CD:
 	- TCB:
 		+ Team: 		Sec - Vault			Ops - System		 Dev - Code
@@ -375,6 +398,8 @@ else return ['ver11', 'ver22']
 - Migrate DB:
 	+ 
 	+ 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 /////////////////////////////////////////////////////////////////////////////////////
 
 CẤU TRÚC POD.YAML TRONG KUBERNETES
@@ -426,98 +451,5 @@ spec:
 	- name: init-techops 		→ Tên container khởi tạo
 	  image: busybox 			→ Image của container khởi tạo
 	  command: ["sh", "-c", "echo Init; sleep 5"] 	→ Câu lệnh khởi tạo
-
-/////////////////////////////////////////////////////////////////////////////////////
-appUser = "shoeshop"
-appName = "shoe-ShoppingCart"
-appVersion = "0.0.1-SNAPSHOT"
-appType = "jar"
-processName = "${appName}-${appVersion}.${appType}"
-folderDeploy = "/datas/${appUser}/run"
-folderBackup = "/datas/${appUser}/backups"
-folderMain = "/datas/${appUser}"
-buildScript = "mvn clean install -DskipTests=true"
-copyScript = "sudo cp target/${processName} ${folderDeploy}"
-permsScript = "sudo chown -R ${appUser}:${appUser} ${folderDeploy}"
-killScript = "sudo kill -9 \$(pgrep -f ${processName})"
-runScript = "sudo su ${appUser} -c 'cd ${folderDeploy}; pwd; ls -l; whoami; java -jar ${processName} > nohup.out 2>&1 &'"
-gitUrl = "http://gitlab.devops.com/shoeshopgroup/shoeshop.git"
-
-def getProcessId() {
-    def pId = sh(returnStdout:true, script: """ pgrep -f ${processName} """, label: "get pId")
-    // def pId = sh(returnStdout:true, script: """ ps -ef| grep ${processName}| grep -v grep| awk \'{print \$2}\' """, label: "get pId")
-}
-
-def startProcess() {
-    stage('start-run-process') {
-        sh(script: """ ${runScript} """, label: "run the project")
-        echo "get PID start"
-        sleep 10
-        def pId = getProcessId()
-        if ("${pId}" == "") {
-            error("Can not start process without pId")
-        }
-        echo("${appName} with server " + params.server + " started")
-    }
-}
-
-def stopProcess() {
-    stage('stop-process') {
-        def pId = getProcessId()
-        if (pId != "") sh(script: """ sudo kill -9 ${pId} """, label: "kill process")
-        echo("${appName} with server " + params.server + " stopped")
-    }
-}
-
-def upcodeProcess() {   // clone src code - build - config - run
-    stage('checkout-clone') { // sha - tag - 
-        if (params.hash == "") error("Require commit hash for upcode")
-        checkout([$class: 'GitSCM', branches: [[ name: params.hash ]], userRemoteConfigs: [[ credentialsId: 'gitlab-user-account-jenkins', url: gitUrl ]]])
-    }
-    stage('build') {
-        sh(script: """ ${buildScript} """, label: "build the project")
-    }
-    
-    stage('config') {
-        sh(script: """ ${copyScript} """, label: "copy .jar file to deploy folfer")
-        sh(script: """ ${permsScript} """, label: "assign project permission for user shoeshop")
-    }
-}
-
-def backupProcess() {
-    stage('backup') { // appName_yyyyddmm_hhmm_hashCommit.zip
-        def timeStamp = new Date().format("yyy-dd-mm_HH-mm")
-        def zipFileName = "${appName}_${timeStamp}.zip"
-        sh(script: """ sudo su ${appUser} -c "cd ${folderMain}; zip -jr ${folderBackup}/${zipFileName} ${folderDeploy}" """, label: "zip run folder for backup old version") // -r=folder; -j=latest subFolder in folderBackup=backups
-    }
-}
-
-def rollbackProcess() {
-    stage('rollback') {
-        sh(script: """ sudo su ${appUser} -c "cd ${folderDeploy}; rm -rf * """, label: "delete current version")
-        sh(script: """ sudo su ${appUser} -c "cd ${folderBackup}; unzip ${params.rollback_version} -d ${folderDeploy} """, label: "rollback verion - ${params.rollback_version}")
-    }
-}
-
-node(params.server) {
-    currentAction = params.action
-    echo "action ${currentAction}"
-    if (currentAction == "start") startProcess()
-    if (currentAction == "stop") stopProcess()
-    if (currentAction == "upcode") {
-        backupProcess()
-        stopProcess()
-        currentBuild.description = "server " + params.server + " upcode with hash " + params.hash
-        upcodeProcess()
-        echo "${currentBuild.description}"
-        startProcess()
-    }
-    if (currentAction == "rollback") {
-        backupProcess()
-        stopProcess()
-        rollbackProcess()
-        startProcess()
-    }
-}
-/////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
