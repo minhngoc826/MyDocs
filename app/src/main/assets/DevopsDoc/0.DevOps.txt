@@ -1222,7 +1222,7 @@
 			- Install Kubernetes Software: by kubeadm	- There are three packages to be installed
 				+ kubeadm – installation and admin tool
 				+ kubelet – main Kubernetes linux service/daemon
-				+ kubectl – command line tool for controlling a Kubenetes cluster
+				+ kubectl – command line tool for controlling a Kubernetes cluster
 				
 				# make sure you have the necessary tools
 				sudo apt-get install -y apt-transport-https ca-certificates curl
@@ -1250,8 +1250,8 @@
 				# sudo apt update -y && sudo apt upgrade -y
 			Tạo user devops và chuyển sang user devops
 				# adduser devops
+				# usermod -aG sudo devops
 				# su devops
-				# sudo usermod -aG sudo devops
 				# cd /home/devops
 			Tắt swap
 				# sudo swapoff -a
@@ -1294,23 +1294,27 @@
 			////////// Xem tiếp bài giảng để cài đặt K8s cluster phù hợp (xác định mô hình cụm cần cài đặt và reset cụm nếu cài không như mong muốn)
 			Mô hình đầu tiên:  1 master 2 worker
 				Thực hiện trên server k8s-master-1
-					# sudo kubeadm init						-> các node khác join vào master: 	sudo kubeadm join 192.168.56.70:6443 --token your_token --discovery-token-ca-cert-hash your_sha --control-plane --certificate-key your_cert
+					# sudo kubeadm init	--apiserver-advertise-address 192.168.56.70					-> các node khác join vào master: 	sudo kubeadm join 192.168.56.70:6443 --token your_token --discovery-token-ca-cert-hash your_sha --control-plane --certificate-key your_cert
+					// sudo kubeadm init --apiserver-advertise-address=192.168.56.70 --pod-network-cidr=192.168.0.0/16
 					# mkdir -p $HOME/.kube
 					# sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 					# sudo chown $(id -u):$(id -g) $HOME/.kube/config
-					# kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/calico.yaml		// cài network cho cụm
+					# kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/calico.yaml		// cài network cho cụm thì các node mới ready đc
 				Thực hiện join trên server k8s-master-2 và k8s master-3
 					# sudo kubeadm join 192.168.56.70:6443 --token your_token --discovery-token-ca-cert-hash your_sha
-					
+					// config worker node: 	[preflight] FYI: You can look at this config file with 'kubectl -n kube-system get cm kubeadm-config -o yaml'
+											[kubelet-start] Writing kubelet configuration to file "/var/lib/kubelet/config.yaml"
+											[kubelet-start] Writing kubelet environment file with flags to file "/var/lib/kubelet/kubeadm-flags.env"
+											
 			Mô hình thứ hai: 3 master (worker) – xem video bài giảng để hiểu
 				Thực hiện trên server k8s-master-1
-					# sudo kubeadm init --control-plane-endpoint "192.168.1.111:6443" --upload-certs
+					# sudo kubeadm init --control-plane-endpoint "192.168.56.70:6443" --upload-certs
 					# mkdir -p $HOME/.kube 
 					# sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config 
 					# sudo chown $(id -u):$(id -g) $HOME/.kube/config
 					# kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/calico.yaml		// cài network cho cụm
 				Thực hiện trên server k8s-master-2 và k8s-master-3
-					# sudo kubeadm join 192.168.1.111:6443 --token your_token --discovery-token-ca-cert-hash your_sha --control-plane --certificate-key your_cert
+					# sudo kubeadm join 192.168.56.70:6443 --token your_token --discovery-token-ca-cert-hash your_sha --control-plane --certificate-key your_cert
 					# mkdir -p $HOME/.kube 
 					# sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config 
 					# sudo chown $(id -u):$(id -g) $HOME/.kube/config
@@ -1363,8 +1367,9 @@
 			+ View cluster vừa tạo -> Connected: google tụ động điền command kết nối -> Enter là vào đc k8s
 		
 1. Triển khai project thực tế:			full stack back-front + db -> ra cách làm
-	1.1. Quy trình triển khai			// roadmap.sh		// search: kubernetes flow, 2 flow: architecture flow / deploy flow
+	1.1. Mô hình triển khai			// roadmap.sh		// search: kubernetes flow, 2 flow: architecture flow / deploy flow
 		+ Traffic -> Ingress [domain1, domain2] -> Service [service1, service2] -> [ Node: [pod1, pod2], Node[pod11, pod12] ]
+		
 		+ File yaml:			// key: value				// k8s có support json nhưng ít dùng hơn yaml
 			- Cú pháp đơn giản
 			- Định dạng phong phú
@@ -1390,14 +1395,148 @@
 				+ metadata:		chứa thông tin liên quan đến resources:	name/labels/namespace/annotations
 				+ spec:			định nghĩa thông tin chi tiết cấu hình của resource tùy theo kind: [pod: spec của container in pod], [Deployment: spec của pod/template/jdk]
 				
-		+ Namespace: chia nhóm node trong k8s để dễ quản lý và phân chia tài nguyên
-			- 
+		+ Namespace: 
+			- tổ chức và phân chia tài nguyên trong cụm k8s thành các nhóm nhỏ để dễ quản lý và vận hành, đảm bảo bảo mật, cũng như áp dụng các policy đồng nhất giữa các namespace:
+				+ kiểm soát lượng cpu, ram, tài nguyên trên từng project, nhóm
+				+ phân tách các môi trường: project, dev, qa, production (nhiều dự án làm việc trên 1 cụm)
+				+ dễ thực thi các policy bảo mật, kiểm soát quyền truy cập: hạn mức tài nguyên, ai/tài nguyên nào đc làm j trên ns đó
+				
+			- mỗi cụm [cluster] có nhiều node, mỗi node có nhiều namespace	// nhiều cty chỉ tạo 1 cluster k8s với 1 node lớn, trong node đó chia nhiều namespace ->
+			- mỗi namespace là 1 project, mỗi project chứa nhiều pod, mỗi pod chứa nhiều container, mỗi ns nên có 1 file cấu hình .yaml
+			- luôn có 1 ns mặc định là defalut chứa pod của ng dùng, ngoài ra k8s tạo mặc định vài ns như: kube-node-lease, kube-public, kube-system
+			
+			- kubectl create/delete ns "Namespace"	// init ns		-> 		kubectl apply/delete -f .yaml	// apply, delete cấu hình = file .yaml
+			- kubectl get ns						// list ns
+			- kubectl get pod	-> ns: default		// kubectl get pod --namespace Name	
+			
+			- Config: 					project1-ns.yaml
+				+ Config Namspace
+					apiVersion: v1
+					kind: Namspace
+					metadata:
+						name: project1
+				+ Giới hạn tài nguyên: project1-resource-quota.yaml
+					apiVersion: v1
+					kind:  ResourceQuota
+					metadata:
+						name: mem-cpu-quota
+						namespace: project1
+					spec:
+						hard:						# hardware
+							requests.cpu: "2"		# mã 2 cpus core
+							requests.memory: 4Gi	# mã 4GB mem
+	
+	1.2. PP triển khai trên k8s: Tư duy ngược
+		- Nhu cầu -> Tool UI tổ chức -> trích xuất yaml -> Nghiên cứu syntax, format, value, template, options ... -> triển khai tương tự chuẩn format
+		- Tool UI tổ chức:				https://spacelift.io/blog/kubernetes-tools
+			+ commandline:	K9s
+			+ desktop:		Lends
+			+ website:		Rancher		-> cài rancher lên server để mn có thể truy cập vào, có phân quyền truy cập luôn, ko cần cài trên máy từng người
+		- Nghiên cứu syntax, format, value, template, options:
+			+ ConfigMap
+			+ Secret
+			+ Service
+			+ Monitor
+			+ Endpoint
+		
+		- Rancher: triển khai, qly, giám sát nhiều cụm K8S trên các môi trường khác nhau: On-premise & Cloud
+			+ Ưu điểm:
+				- Tạo tài nguyên = UI
+				- Quản lý đc nhiều cụm K8s
+				- Phân quyền mạnh mẽ - based RBAC Kubernetes, custom đc cụ thể đến từng tài nguyên
+				- Hỗ trợ giám sát, warning cụm Kubernetes: 
+				- Bảo mật tốt: authen = nhiều cách LDAP, github, webservice có mã hóa CLS, colaapj cụm, cô lập cụm
+				- được dử dụng trong các dự án lơn và môi trường dev/production
+			+ install:
+				- run Rancher by docker/docker-compose: 	cụm nhỏ, dev/staging
+				- run Rancher trực tiếp trên k8s = Helm:  	production, cụm to
+				
+				- run Rancher by docker/docker-compose:
+					+ tạo server run rancher:	có thể lưu data trên 1 ổ cứng riêng rồi gán vào server -> server lỗi vần còn data
+					+ check list disk: lsblk	-> sda = ổ của OS, sdb = ổ rời bên ngoài [type: disk]
+					+ formart disk: mkfs.ext4 -m 0 /dev/sdb			// formart 100% và chỉ tạo 1 phân vùng
+					+ tạo folder để mount ổ mới:	mkdir /data		
+					+ mount ổ vừa tạo vào folder /data server:	echo "/dev/sdb /data ext4 defaluts 0 0" | tee -a /etc/fstab -> mount -a	-> check: df -h
+					
+					+ install docker: apt update -y && apt install docker.io docker-compose -y
+					+ check rancher version:	search rancher version matrix	-> cần check đúng highest version support của k8s hiện tại
+					+ install rancher =- docker-compose: mkdir /exHDD/rancher -> nano docker-compose.yaml	-> docker-com up -d		-> run rancher by IP/domain: change pass
+								version: '3'
+								services:
+								  rancher-server:
+									image: rancher/rancher:v2.9.2
+									container_name: rancher-server
+									restart: unless-stopped
+									ports:
+									  - "80:80"	`````````
+									  - "443:443"
+									volumes:
+									  - /exHDD/rancher/data:/var/lib/rancher
+									privileged: true
+						// volumes: /exHDD/rancher/data:/var/lib/rancher		-> mount volume của ranhcer /var/lib/rancher ra ổ cứng thứ 2 exHDD/rancher
+						
+					+ rancher web -> import k8s: import existing -> cluster name -> add member role: Admin owner -> Create -> select command for unknown authority
+					+ master node: run command	-> download config .yaml && apply this file
+			+ using:
+				- 
+				
 2. Xây dựng công cụ dự án:				db, message, cache	-> dảm bảo data & tối ưu
 3. Giám sát và quản trị Kubernetes:		monitoring dự án, hạ tầng server, uptime, backup & restore trên cụm Kubernetes
 4. 
 5.
 6.
 //////  KUBERNETES  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+CẤU TRÚC POD.YAML TRONG KUBERNETES
+
+appversion: v1 					→ LOẠI API CỦA TÀI NGUYÊN (
+
+kind: pod 						→ LOẠI TÀI NGUYÊN (POD)
+
+metadata:
+	name: techops-pod 			→ Tên duy nhất của Pod
+	abels: 						→ Nhãn để tổ chức và chọn Podapp: techops → Nhãn ứng dụng, hữu ích cho bộ chọn (selectors)
+		tier: backend 			→ Xác định lớp ứng dụng
+
+spec:
+	containers: 				→ CONTAINER(S) CHẠY TRONG POD NÀY
+	- name: techops-container 	→ Tên của container
+	  image: nginx:1.23 		→ Docker image cho container
+	  ports:
+	  - containerPort: 80 		→ Cổng mà container mở nội bộ
+	  env:
+	  - name: ENV
+	    value: production 		→ Biến môi trường để cấu hình
+	  volumeMounts: 			→ CÁC VOLUMES ĐƯỢC GẮN VÀO TRONG CONTAINER
+	  - name: config-volume 	→ Volume được định nghĩa trong phần “volumes”
+		mountPath: /usr/share/nginx/html 	→ Điểm gắn kết (mount point) bên trong container
+
+	volumes:
+	- name: config-volume 		→ Tên của volume
+	  configMap:
+	    name: techops-config	→ Sử dụng ConfigMap làm nguồn và tham chiếu đến ConfigMap có tên “techops-config”
+	  
+	RESTARTPOLICY: ALWAYS 		→ CHÍNH SÁCH KHỞI ĐỘNG LẠI POD (ALWAYS, ONFAILURE HOẶC NEVER)
+
+	NODESELECTOR: 				→ LỊCH TRÌNH (SCHEDULE) POD TRÊN CÁC NODE CỤ THỂ
+	  disktype: ssd 			→ Chỉ chạy trên các node có nhãn “disktype=ssd”
+
+	TOLERATIONS: 				→ CHO PHÉP LÊN LỊCH TRÊN CÁC NODE BỊ "TAINT"
+	- key: "special-taint" 		→ Khóa taint cần chấp nhận
+	  operator: "Equal" 		→ Điều kiện khớp chính xác
+	  value: "true" 			→ Giá trị cần khớp
+	  effect: "NoExecute" 		→ Tác động: Không lên lịch (NoSchedule) hoặc đuổi khỏi node (NoExecute)
+
+	SECURITYCONTEXT: 			→ THIẾT LẬP BẢO MẬT Ở CẤP ĐỘ POD	
+	  runAsUser: 1000 			→ Chạy container dưới user ID này
+	  runAsGroup: 3000 			→ Chạy container dưới group ID này
+	  fsGroup: 2000 			→ Nhóm sở hữu volumes đã gắn kết
+
+	INITCONTAINERS: 			→ CHẠY TRƯỚC KHI CONTAINER CHÍNH CHẠY
+	- name: init-techops 		→ Tên container khởi tạo
+	  image: busybox 			→ Image của container khởi tạo
+	  command: ["sh", "-c", "echo Init; sleep 5"] 	→ Câu lệnh khởi tạo
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 https://www.baeldung.com/linux/virtualbox-ping-guest-machines

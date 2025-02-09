@@ -1,8 +1,8 @@
 ///////////////////	Home ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Name						IP						Domain					Web/Port/Type
-lab-server					192.168.1.10			server.devops.com		todolist:8080/Vuejs:nginx		shoeshop
-git-db-registry-server		192.168.1.20			gitlab.devops.com		gitlab:80						database:3306				registry:5000
-jenkins-server				192.168.1.30			jenkins.devops.com		jenkins:8080
+lab-server					192.168.55.10			server.devops.com		todolist:8080/Vuejs:nginx		shoeshop
+git-db-registry-server		192.168.55.20			gitlab.devops.com		gitlab:80						database:3306				registry:5000
+jenkins-server				192.168.55.30			jenkins.devops.com		jenkins:8080
 ///////////////////	Company	//////////////////////////////////////////////////////////////////
 Name						IP						Domain					Web/Port/Type
 lab-server					192.168.56.10			server.devops.com		todolist:2001/Vuejs:nginx			vision:3000/React:service			shoeshop:8090/Spring:
@@ -22,6 +22,8 @@ ssh ngocnm@192.168.1.
 192.168.1.10 server.devops.com
 192.168.1.20 gitlab.devops.com
 192.168.1.30 jenkins.devops.com
+192.168.56.60 dev-server
+192.168.56.50 k8s-worker
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ssh ngocnm@192.168.56.
 192.168.56.10 server.devops.com
@@ -60,6 +62,11 @@ ssh ngocnm@192.168.56.
 		- VM:		sudo mount -t vboxsf SharedFolder /mnt/shared-folder
 		- Host: 	copy file to E:\VMWare\SharedFolder		-> ls /mnt/shared-folder
 		- VM:		cp filePath /mnt/shared-folder			-> F5 E:\VMWare\SharedFolder
+	+ shared folder VMWare:
+		- VM setting -> ennable shared folder	-> 	add folder: D:\DevOps\VMWare\SharedFolder
+		- Menu -> Edit -> Preferences: Enable all shared foldes by default
+		- sudo apt-get install open-vm-tools
+		- mkdir /mnt/shared-folder 		->		sudo /usr/bin/vmhgfs-fuse .host:/SharedFolder /mnt/shared-folder  
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 1. Project
 	- install dependencies / tools for project (run & deploy)

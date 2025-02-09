@@ -1,0 +1,127 @@
+1. Define
+	1.1. Define
+	1.2. Install
+		- Require: 						https://devopsedu.vn/courses/khoa-hoc-kubenetes-thuc-te/lesson/bai-5-trien-khai-kubernetes-cluster-tren-on-premise-2/
+			+ Deactive swap = off:	 	sudo swapoff -a					sudo sed -i '/swap.img/s/^/#/' /etc/fstab
+			+ Linux kernel modules:		overlay / br_netfilter			nano /etc/modules-load.d/containerd.conf			active: sudo modprobe overlay/br_netfilter
+			+ Network:					echo "net.bridge.bridge-nf-call-ip6tables = 1\nnet.bridge.bridge-nf-call-iptables = 1\nnet.ipv4.ip_forward = 1" | sudo tee -a /etc/sysctl.d/kubernetes.conf
+			+ Container: 				containerd
+			+ kubelet kubeadm kubectl	need hold version after install
+		- Config:
+			+ /etc/apt/sources.list.d/kubernetes.list:				version k8s:		https://pkgs.k8s.io/core:/stable:/v1.30/deb/
+			+ /etc/apt/keyrings/kubernetes-apt-keyring.gpg			key of k8s:			https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key
+			+ /var/lib/etcd											
+			+ /etc/kubernetes/manifests/							// kube-apiserver.yaml, kube-control-manager.yaml, kube-scheduler.yaml, etcd.yaml
+			+ /etc/kubernetes/admin.conf = $HOME/.kube/config
+				- apiVersion:
+				- clusters: 											
+					+ cluster:		server: https://10.0.2.15:6443			certificate-authority-data: sha
+				- contexts:
+					+ context
+				- kind:
+				- preferences:
+				- users:
+					+ name
+					+ client-certificate-data /  client-key-data
+		-
+	1.3. Fix - Change
+		- Change master node IP: 		192.168.56.50		-> need test more
+			+ kubectl drain --ignore-daemonsets													// Drain the node you want to change the IP address
+			+ nano /etc/kubernetes/manifests/kube-apiserver.yaml		/etc/kubernetes/admin.conf	// edit new IP			/etc/kubernetes/manifests/etcd.yaml
+			+ systemctl restart kube-apiserver kube-controller-manager/kube-scheduler				// Restart the Kubernetes control plane components
+			+ kubeadm token create --print-join-command												// Generate a new token for the worker nodes to join the cluster
+			+ kubeadm join IP:port --token master-token --discovery-token-ca-cert-hash sha-hash		// join worker node again
+			
+			+ Master change IP: https://github.com/kubernetes/kubeadm/issues/338
+			
+		- Wrong network adapter for VMs
+			+ 	1: lo: <LOOPBACK,UP,LOWER_UP>
+				2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+					link/ether 08:00:27:bb:14:75 brd ff:ff:ff:ff:ff:ff
+					inet 10.0.2.15
+				3: eth1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+					link/ether 08:00:27:fb:48:77 brd ff:ff:ff:ff:ff:ff
+					inet 100.0.0.1
+				4: docker0: <NO-CARRIER,BROADCAST,MULTICAST,UP>
+			+ sudo kubeadm init --apiserver-advertise-address=100.0.0.1 --pod-network-cidr=10.244.0.0/16
+			+ edit calico.yml:	--iface=eth1			// find: find ~/ -type f -name "calico.yaml"
+		
+		- Worker node is not ready after join:		Network plugin returns error: cni plugin not initialized		-> Maybe VirtualBox using NAT IP, not Host-only IP
+			+ master node: kubectl -n kube-system apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/calico.yaml
+			+ worker node: kubectl describe node ks8-worker			->		see Addresses:InternalIP = 10.0.2.15 -> 
+				- Fix IP: 		sudo nano /lib/systemd/system/kubelet.service.d/10-kubeadm.conf	--> add: --node-ip=192.168.56.60 for KUBELET_KUBECONFIG_ARGS --> sudo systemctl daemon-reload -> sudo systemctl restart kubelet
+				- Fix cni ...: 	scp /etc/cni/net.d/10-calico.conflist devops@192.168.56.60:/home/devops  ->  cp /home/devops/10-calico.conflist /etc/cni/net.d/  ->  systemctl restart kubelet
+			
+		- Issue:
+			+ On kubemaster1:
+				enp0s8 is important, without this kubeadm takes enp0s3's address and then the second master can't connect due to lack of IP route
+
+				current_ip=$(/sbin/ip -o -4 addr list enp0s8 | awk '{print $4}' | cut -d/ -f1)    
+				kubeadm init --apiserver-advertise-address=${current_ip} --pod-network-cidr 10.0.123.0/16
+				wget https://docs.projectcalico.org/manifests/calico.yaml
+				# I want to use different CIDR for Calico, thus the following change
+				sed -i 's/# - name: CALICO_IPV4POOL_CIDR/ - name: CALICO_IPV4POOL_CIDR/' calico.yaml
+				sed -i 's/#   value: "192.168.0.0/   value: "10.0.123.0/' calico.yaml 
+			+ On kubemaster2:
+				echo "10.0.0.11  kubemaster1" >> /etc/hosts
+				JOIN_CMD=$(ssh -o StrictHostKeyChecking=no root@kubemaster1 "kubeadm token create --print-join-command")
+				echo $JOIN_CMD
+				$JOIN_CMD
+				
+				The problem was that kubeadm was taking enp0s3 and putting it into the join command. Execution was hanging, as there was no IP route between the networks.
+				Hope this helps someone else in the future.
+2. Component
+	- Cluster
+		+ Master Mode = Control-plane:
+			- kube-api-server:			connect worker nodes vs master node			
+			- etcd:						store: configs, status
+			- kube-scheduler:			supply workload
+			- kube-control-manager:		upgrade & fix
+			- kube-cloud-manager:		connect cloud-server-api
+		+ Worker Node:
+			- kube-proxy:	handle network
+			- kubenet:		manage pods
+			- node:			
+				+ pod: container - container2
+				+ pod2
+		+ Worker Node2
+	
+	- Container:
+		+ Types: Docker, Containerd
+		+ configs:							// /etc/containerd/config.toml
+			- root = "/var/lib/containerd"
+			- state = "/run/containerd"
+			- [grpc]						// address = "/run/containerd/containerd.sock"
+			- [metrics]						// address = ""
+			- [plugins]						
+				+ [plugins."io.containerd.gc.v1.scheduler"]
+				+ [plugins."io.containerd.grpc.v1.cri"]			// sandbox_image = "registry.k8s.io/pause:3.8"		cdi_spec_dirs = ["/etc/cdi", "/var/run/cdi"]
+					- [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]			// SystemdCgroup = true
+3. Flow
+	3.1. Architect Flow:
+		- kube-api-server <---- worker node [kubenet/kube-proxy <---- pod]
+		- kube-api-server <---- etcd
+		- kube-api-server <---- kube-scheduler
+		- kube-api-server <---- kube-control-manager
+		- kube-api-server <---- kube-cloud-manager ---> kube-api-server
+		
+	3.2. Deploy Flow:
+		- Traffic ---> Ingress [domain1 - domain2] ---> Service [service1 - service2] ---> Worker node [pod1 - pod2]
+		
+4. Command
+	4.1. kubeadm
+	4.2. kubectl
+		- kubectl describe node nodeName			// Ready	- 	Addresses: IP		// cni plugin not initialized: fix= /etc/cni/net.d/
+		- kubectl get pods -o wide -n kube-system		kubectl get pods --all-namespaces		kubectl get nodes -o wide
+		- kubectl edit node <nodename>
+		- kubectl drain <node-name> 				// --ignore-daemonsets --delete-local-data
+		- kubectl delete node <node-name>
+	4.3. kubelet
+	
+	- journalctl -u kubelet
+////////////////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////////////////
+- Vấn đề loadbalancing với gRPC communication trong Kubernetes: https://viblo.asia/p/van-de-loadbalancing-voi-grpc-communication-trong-kubernetes-part-1-zOQJwKybJMP?fbclid=IwY2xjawIR6sdleHRuA2FlbQIxMAABHTa2C24faou0oyYlJ4IKShViiEwVGeKa4FucO794f7HV8E5svUYSnBCcHw_aem_8X_KLvVJxxVR_Josoml2Fw
+- Database CI/CD and Security at Scale: https://www.bytebase.com/?fbclid=IwY2xjawIR6mNleHRuA2FlbQIxMAABHQbaPmMPQklUXzFriHi2_mwAipc2ARUvA5nXH7F07M4aHh92oKdJzWuyZQ_aem__TpfeZfSgIbko7eLjUDSSA
+////////////////////////////////////////////////////////////////////////////////////////////

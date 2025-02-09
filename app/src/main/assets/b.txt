@@ -1,6 +1,7 @@
 https://www.facebook.com/groups/950551346787852/
 
- sudo kubeadm init
+# sudo kubeadm init
+
 [sudo] password for devops:
 I0208 12:06:59.373375    1127 version.go:256] remote version is much newer: v1.32.1; falling back to: stable-1.30
 [init] Using Kubernetes version: v1.30.9
@@ -77,5 +78,7 @@ Run "kubectl apply -f [podnetwork].yaml" with one of the options listed at:
 
 Then you can join any number of worker nodes by running the following on each as root:
 
-kubeadm join 10.0.2.15:6443 --token hghp1j.1n11loiwd2l0me3g \
-        --discovery-token-ca-cert-hash sha256:1d985d8a88c0e6a2e456afaa2e2687425091faa411a3f1d1c20eae7e42541e4b
+IP: 192.168.56.70
+// 1 master - n worker
+kubeadm join 192.168.56.70:6443 --token arv434.r8yjaxhcf1eghmmn \
+        --discovery-token-ca-cert-hash sha256:2cf3ddb19c0e6c942ac5d965aab0fbf0a6264892fd86664f4b5c2cca6f482755
