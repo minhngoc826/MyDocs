@@ -1453,14 +1453,15 @@
 				
 				- run Rancher by docker/docker-compose:
 					+ tạo server run rancher:	có thể lưu data trên 1 ổ cứng riêng rồi gán vào server -> server lỗi vần còn data
-					+ check list disk: lsblk	-> sda = ổ của OS, sdb = ổ rời bên ngoài [type: disk]
-					+ formart disk: mkfs.ext4 -m 0 /dev/sdb			// formart 100% và chỉ tạo 1 phân vùng
-					+ tạo folder để mount ổ mới:	mkdir /data		
-					+ mount ổ vừa tạo vào folder /data server:	echo "/dev/sdb /data ext4 defaluts 0 0" | tee -a /etc/fstab -> mount -a	-> check: df -h
+					+ lsblk:							// check list disk: 	-> sda = ổ của OS, sdb = ổ rời bên ngoài [type: disk]
+                    + mkfs.ext4 -m 0 /dev/sdb			// formart 100% và chỉ tạo 1 phân vùng
+                    + mkdir /data						// tạo folder để mount ổ mới
+                    + echo "/dev/sdb 	  /data 		 ext4 	 defaults	0	 	0" | tee -a /etc/fstab	-> mount -a  -> df -h	// mount ổ vừa tạo vào folder /data in server, check	
+					// 		<file system> <mount point>  <type>  <options>  <dump>  <pass>
 					
 					+ install docker: apt update -y && apt install docker.io docker-compose -y
 					+ check rancher version:	search rancher version matrix	-> cần check đúng highest version support của k8s hiện tại
-					+ install rancher =- docker-compose: mkdir /exHDD/rancher -> nano docker-compose.yaml	-> docker-com up -d		-> run rancher by IP/domain: change pass
+					+ install rancher =- docker-compose: mkdir /exHDD/rancher -> nano docker-compose.yaml	-> docker-com up -d		-> run rancher by IP/domain: change pass -> 192.168.56.91
 								version: '3'
 								services:
 								  rancher-server:
@@ -1468,17 +1469,84 @@
 									container_name: rancher-server
 									restart: unless-stopped
 									ports:
-									  - "80:80"	`````````
+									  - "80:80"
 									  - "443:443"
 									volumes:
 									  - /exHDD/rancher/data:/var/lib/rancher
 									privileged: true
-						// volumes: /exHDD/rancher/data:/var/lib/rancher		-> mount volume của ranhcer /var/lib/rancher ra ổ cứng thứ 2 exHDD/rancher
+                        // volumes: /exHDD/rancher/data:/var/lib/rancher		-> mount volume của ranhcer /var/lib/rancher ra ổ cứng thứ 2 exHDD/rancher
 						
 					+ rancher web -> import k8s: import existing -> cluster name -> add member role: Admin owner -> Create -> select command for unknown authority
 					+ master node: run command	-> download config .yaml && apply this file
 			+ using:
 				- 
+			
+			+ install rancher on cloud:
+				- Cloud Home -> Computer enhine -> VM instance -> Create instance: 	tạo 1 máy ảo để cài rancher -> name=rancher-server, location, cpu-ram, os & storage, network: http & https
+				- Add new disk to server:	
+				- IP của rancher-server sẽ thay đổi khi tắt bật lại, muốn giữ static ip thì cần phí duy trình	-> VPC network -> IP address -> Reserve
+				- Open rancher-server VM và làm tương tự on-premise
+				- docker run --name rancher-server -d --restart=unless-stopped -p 80:80 -p 443:443 -v /exHDD/rancher/:/var/lib/rancher --privileged true rancher/rancher:v2.9.2
+	
+	1.3. Các thành phần	trong k8s
+		- Pods: 		là j? để làm j? dùng ntn?
+			+ define:	đơn vị triển khai nhỏ nhất - đơn giản nhất, đại diện cho 1&n containers cùng chia sẻ tài nguyên - network với nhau
+						có thể coi pod là 1 môi trường chia sẻ hay máy chủ ứng dụng (server), pod chứa [container, volumes], mỗi pod có 1 IP riêng	// mỗi container là 1 ứng dụng
+			+ Using pods: using config.yaml	-> kind: Pod -> spec: container		[]
+					apiVersion: v1
+					kind: Pod
+					metadata:
+						name: car-serv-pod
+						namespace: car-serv-ns
+					spec:
+						containers:
+						- name: nginx-cont
+						  image: nginx:latest
+						  ports:
+						  - containerPort: 80
+						
+						containsers:
+						- name: car-serv-cont
+						  image: elroydevops/car-serv
+						  ports:
+						  - containerPort: 80
+						....
+
+			+ kubectl apply -f ns.yaml / pod.yaml						// create ns and pod
+			+ kubectl get pod -n car-serv								// get list pod of ns			// kubectl delete pod podName -n ns = kubectl delete -f pod.yaml
+			+ kubectl exec -it containerName -n ns -- /bin/bash			// vào env của container
+			+ kubectl describe pod car-serv-pod							// kubectl run tester --generator run-pod/v1 --image alpine -- /bin/sh -c "sleep 30"
+			+ kubectl get endpoints ${SERVICE_NAME}						// Debugging Services			kubectl run tester --generator run-pod/v1 --image alpine --restart Never --rm -it -- /bin/sh -c env
+			+ kubectl get pods --all-namespaces -o wide					// 
+			+ kubectl logs <pod-name>
+			+ kubectl get deployments									// Check the deployments
+			
+			* Mỗi pod chỉ nên chạy 1 container thôi, nếu nhiều container thì khi pod lỗi sẽ lỗi tất, hoặc khó debug khi gặp lỗi, cũng như giảm thiểu tối đa sự phụ thuộc/phân chia tài nguyên -> phân tách frontend/backend thành từng pod
+		
+	1.4. Deployment Kubernetes
+		- 1 pod nên chỉ chạy 1 container
+		- ko nên chạy độc lập từng pod
+		- nên dùng workload resource để chạy kết hợp các pod: Deployment, Jib, StatefulSet
+		- Đảm bảo pod chạy đúng cách và chạy nhiều pod: dùng Workload Management
+		- Workload Management: 
+			+ Deployment: quản lý pod và chạy nhiều pod giống nhau cùng lúc 	// ReplicaSet: đại diện cho số lượng pod [số lượng nhân viên bán bánh]
+				- quản lý version app (save version docker images để rollback khi cần = version mỗi khi release ứng dụng, bản chất là thay đổi version docker image)
+				- scale ứng dụng = tăng giảm số lượng pod để đảm bảo hoạt động ổn định
+				- tự động khôi phục lỗi [khởi tạo 1 deployment với 3 pod, sau đó 1 pod bị lỗi thì sẽ tự động tạo 1 pod mới tương tự để đảm bảo đủ 3 pod]
+				- 
+			+ StatefulSet:
+				- 
+			+ DaemonSet:
+				- 
+	
+	
+	** Debug k8s:
+		- Node
+			+ Cert: from worker node, run: curl https://192.168.56.70:6443/healthz --cacert /etc/kubernetes/pki/ca.crt
+			+ kubectl get configmaps		- check multi CAs
+		- Pod:
+			+ kubectl get events --all-namespaces  --sort-by='.metadata.creationTimestamp'		kubectl get events --sort-by=".metadata.managedFields[0].time"
+		- Containder:
 				
 2. Xây dựng công cụ dự án:				db, message, cache	-> dảm bảo data & tối ưu
 3. Giám sát và quản trị Kubernetes:		monitoring dự án, hạ tầng server, uptime, backup & restore trên cụm Kubernetes
@@ -1536,6 +1604,79 @@ spec:
 	- name: init-techops 		→ Tên container khởi tạo
 	  image: busybox 			→ Image của container khởi tạo
 	  command: ["sh", "-c", "echo Init; sleep 5"] 	→ Câu lệnh khởi tạo
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////// Shell script - Shell Programming - Bash shell ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+- #!/bin/bash:
+- If else:	if [ condition ]; then todo1; else todo2; fi				if..elif..else..fi 					if..then..else..if..then..fi..fi..(Nested if)
+	+ if [ $? -ne 0 ]:		$? = return code form a previous command or function			 0 is the standard return code for a successful completion		-ne: not equal
+	+ if [ $# -ne 3 ]:		$# = holds the number of arguments passed to the script
+	+ if [ -e "filename" ] echo "File exist"; else echo "File does not exist"; fi
+
+	+ &&=and	 [$0 $1]=argumeent0/1
+	+ number:	-eq=Equality check		-ne=Inequality check		-lt / -le = Less Than/Less Than or Equal >< -ht / -ge
+	+ string:	-z "$a" = $a is empty	"$a" = / == "$b": same as	"$a" != "$b"
+- Array:
+	+ array_name=(value1 ... valuen)		-> 		array_name[index]=value			${array_name[index]}		${array_name[*]} = ${array_name[@]} = all elements
+
+- Loop:
+	+ while ... do ... done				for var in v-1 ... v-n do ... done				untill ... do ... done
+
+//////// Groovy ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+0. Define:
+	- một ngôn ngữ lập trình động chạy trên nền máy ảo Java, có các tính năng tương tự như Python hoặc Ruby.
+	-
+1. Syntax:
+	- same JAVA
+	- Not same Java:
+		+ Shebang line: 	#!/usr/bin/env groovy
+		+ Keys words:		as		def		in		trait
+
+		+ Operator:
+			- Unary operators:	+3=3	-4=0-4		-(-1)=1
+			- Assignment arithmetic operators:	**=	-> 3**=2 ~ 3^2=9
+			- Relational operators:		== ~ equal() [compare value]			=== ~ is() ~ identical (Since Groovy 3.0.0) [[compare value] & address]
+			- Logical operators:	! 	> 	&& 	> 	||
+			- Ternary operator: v1 ? v1 : v2 = v1 ?: v1 : Elvis operator
+
+			- Object operators:
+				+ Safe navigation operator:			object?.field
+				+ Direct field access operator:		object.@field
+				+ Method pointer operator
+
+			- Regular expression operators:
+				+ Pattern operator: 	~
+				+ Find operator:		=~
+				+ Match operator:		==~
+
+		+ String: 	'abc'	'ab'='a' + 'b'	"abc"		"""abc multi line"""		'''mutiline string'''		/…​/ Slashy			$/…​/$ Dollar slashy
+		+ Num:		byte, char, short, int, long, float, double, BigInteger/BigDecimal
+
+		+ Arays:	String[] arrStr = ['Ananas', 'Banana', 'Kiwi']			def numArr = [1, 2, 3] as int[]			Integer[][] matrix2 = [[1, 2], [3, 4]]			def primes = new int[] {2, 3, 5, 7, 11}
+		+ List:		def ll = [1,2,3,'c',true] -> ll[0] = 1, ll[-1]=true		//default: ArrayList			def linkedList = [2, 3, 4] as LinkedList  ~  LinkedList otherLinked = [3, 4, 5]
+					ll << 'e':	append end
+
+			- subList:	ll[1,3] = [2,'c']		ll[[2..4]=[3,'c',true]
+			- matrix:	multi = [[1,2], [3,4]] -> multi[1][1]
+
+		+ Maps:		def colors = [red: '#FF0000', green: '#00FF00', blue: '#0000FF'] -> colors['pink'] = colors.pink = '#FF00FF'			def emptyMap = [:]
+2. Default import lib:
+	- Default import lib:
+		java.io.*
+		java.lang.*
+		java.math.BigDecimal
+		java.math.BigInteger
+		java.net.*
+		java.util.*
+		groovy.lang.*
+		groovy.util.*
+	- Multi-methods: ~ runtime dispatch when overloading method
+		- java: 	select overloading method when complie -> based on params type
+		- groovy:	select overloading method when runtime -> based on params type
+		-
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 

@@ -55,10 +55,12 @@ ssh ngocnm@192.168.56.
 	- Check logs:
 		+ tail -n 5000 logFile
 		+ grep keyWord logFile
+	- set time zone:
+		+ sudo timedatectl set-timezone Asia/Ho_Chi_Minh			sudo dpkg-reconfigure tzdata
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 0. Virtualbox VM: 				
 	+ shared folder:		E:\VMWare\SharedFolder
-		- VM -> Setting -> SharedFolder -> New -> Select E:\VMWare\SharedFolder -> Mount point: /mnt/share-folder or /home/user/shared-folder 	 & 		Select: Auto mount & Make Permanent
+		- VM -> Setting -> SharedFolder -> New -> Select E:\VMWare\SharedFolder -> Mount point: /mnt/shared-folder or /home/user/shared-folder 	 & 		Select: Auto mount & Make Permanent
 		- VM:		sudo mount -t vboxsf SharedFolder /mnt/shared-folder
 		- Host: 	copy file to E:\VMWare\SharedFolder		-> ls /mnt/shared-folder
 		- VM:		cp filePath /mnt/shared-folder			-> F5 E:\VMWare\SharedFolder
@@ -128,7 +130,7 @@ ssh ngocnm@192.168.56.
 	+ private registry: self authentication by openssl	(any user, any pass)
 		- install openssl:				apt install openssl -y			mkdir -p /tools/docker/registry/certs & data
 		- gen key by openssl:			cd /tools/docker/registry/		openssl req -newkey rsa:4096 -nodes -sha256 -keyout certs/domain.key -subj "/CN=192.168.1.10" -addext "subjectAltName=DNS:192.168.1.10,IP:192.168.1.10" -x509 -days 3650 -out certs/domain.crt
-		- install docker-compose: 		apt install docker-compose
+		- install docker-compose: 		apt install docker-compose -y
 		- write docker-compose.yml:		cd /tools/docker/registry/		nano docker-compose.yml		--> 	run: docker-compose up -d
 			version: '3'
 			services:
@@ -154,7 +156,8 @@ ssh ngocnm@192.168.56.
 			+ docker-compose ps							// list docker-compose running
 			+ 192.168.56.10:5000/v2/_catalog:			// list images on registry									// registry-domain/v2/_catalog ~ registry.devops.com/v2/_catalog
 			+ 192.168.56.10:5000/v2/image/tags/list:	// list tags of image on registry
-		- *** copy cert to any client using registry:	mkdir -p /etc/docker/certs.d/192.168.56.10:5000		----	cp 	/tools/docker/registry/certs/domain.crt /etc/docker/certs.d/192.168.56.10:5000/ca.crt
+		- *** copy cert to any client using registry & add hosts:	mkdir -p /etc/docker/certs.d/192.168.56.40:5000		----	cp 	/tools/docker/registry/certs/domain.crt /etc/docker/certs.d/192.168.56.40:5000/ca.crt
+				cp /mnt/shared-folder/ca.crt /etc/docker/certs.d/192.168.56.40:5000/ca.crt		// for shared-folder
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 5. Jenkins server:
 	+ install jenkins:		create file: /tools/jenkins/jenkins-install.sh				-> 		run: chmod +x ../jenkins-install.sh (cap quyen execute)				sh/bash ../jenkins-install.sh
@@ -362,8 +365,135 @@ ssh ngocnm@192.168.56.
 	+ Zabbix
 
 //////  KUBERNETES  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+9. Kubernetes
+	9.1. Component:
+		+ Cluster:		[master nodes - worker nodes]											// nhiều node, 1 master - n worker 	><	n master - n worker
+			- Node:		[ ns1: [pod1.1, pod1.2, ...] 	ns2[pod2.1 pod2.2] 	... ]				// ns = name space
+			- Master node:
+				+ namespace:
+					- default, kube-system, kube-public, kube-node-lease						// when create node done: kubeadm init --address_server 192.168.56.70
+					- cattle-system																// when import k8s to rancher
+				// Pods
+				+ Pod:	[1container		volumes]												// user pod
+				+ etcd																			// pod in ns kube-system		name: etcd-k8s-70-master
+				+ kube-apiserver																// pod in ns kube-system		name: kube-apiserver-k8s-70-master
+				+ kube-scheduler																// pod in ns kube-system		name: kube-scheduler-k8s-70-master
+				+ kube-controller-manager														// pod in ns kube-system		name: kube-controller-manager-k8s-70-master
+				+ kube-cloud-manager															// pod in ns kube-system
+				// dns
+				+ coredns-xxxx-yyy																// pod in ns cattle-system
 
+				// Network
+				+ calico-node-xxxx																// pod in ns kube-system		bao nhiêu node trong cluster thì có bấy nhiêu pod calico
+				+ kube-proxy-xxxx																// pod in ns kube-system		bao nhiêu node trong cluster thì có bấy nhiêu pod proxy
+				+ calico-kube-controllers-xxx													// pod in ns kube-system
+				// Rancher
+				+ cattle-cluster-agent-xxx														// pod in ns cattle-system		rancher agent -> need pull image rancher:v2.9.2 -> maybe got ImagePullBackOff error
+				+ rancher-webhook
+				+ rancher-provisioning-capi
+			- Worker node:
+				+ Pod
+				+ kubelet
+				+ kube-proxy
+	9.2. Command
+		+ kubeadm:
+		+ kubectl:
+			- kubectl logs car-serv-pod -n car-serv-ns
+			- kubectl get events --all-namespaces  --sort-by='.metadata.creationTimestamp'
+			- kubectl get events pod car-serv-pod -n car-serv-ns
+			- kubectl describe pod car-serv-pod -n car-serv-ns
+		+ kubelet:
+	9.3. Fix error
+		+ init k8s in master node:				- node is not ready	-> apply calico.yaml		- init wrong node ip -> init kem ip & set ip for each node in:
+		+ worker node joined to master node:	- node is not ready	-> apply calico.yaml
+		+ import k8s to rancher:				- cluster still pending	-> agent got error		- ImagePullBackOff / ContainerCreating
+		+ Created new pod:						- pod still ContainerCreating -> 				// kubectl get events --all-namespaces  --sort-by='.metadata.creationTimestamp'
+			- Failed to pull image "elroydevops/car-serv:latest" / ImagePullBackOff / ContainerCreating / ErrImagePull: by cert error /  tls: failed to verify certificate: x509: certificate signed by unknown authority
+			- Failed to create pod sandbox: rpc error
+			- Fix cert:
+				+ 1. Copy *cert, *.key  in /etc/kubernets/pki/ to /usr/local/share/ca-certificates/		-> sudo update-ca-certificates
+				+ 2. Systemctl restart containerd
+			- Fix pulling image failed:
+				+
 
+		+ using privare registry:
+			// 1. create secret for single privare registry
+			- kubectl create secret docker-registry dockersecret-name --docker-server=192.168.56.40:5000 --docker-username=ngocnm --docker-password=admin 		// --docker-email=<your-email>
+					containers:		// pod.yaml
+					- name: ...
+					imagePullSecrets:
+					- name: dockersecret-name
+				+ kubectl get secret dockersecret-name --output=yaml				kubectl describe secret dockersecret-name			kubectl edit/delete secrets <secret-name>
+				+ kubectl get secret dockersecret-name --output="jsonpath={.data.\.dockerconfigjson}" | base64 --decode	 // {"auths":{"192.168.56.40:5000":{"username":"ngocnm","password":"admin","auth":"bmdvY25tOmFkbWlu"}}}
+				// Add image pull secret to service account
+				- kubectl patch serviceaccount default -p '{"imagePullSecrets": [{"name": "dockersecret-name"}]}'			// ~ kubectl edit serviceaccount/default
+			// 2. Adding insecure registry in containerd
+			- sudo nano /etc/containerd/config.toml
+					[plugins."io.containerd.grpc.v1.cri".registry.configs]
+					  [plugins."io.containerd.grpc.v1.cri".registry.configs."192.168.56.40:5000"]
+						[plugins."io.containerd.grpc.v1.cri".registry.configs."192.168.56.40:5000".tls]
+						  ca_file = ""
+						  cert_file = ""
+						  insecure_skip_verify = true
+						  key_file = ""
+
+					[plugins."io.containerd.grpc.v1.cri".registry.mirrors]
+					  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."192.168.56.40:5000"]
+						endpoint = ["https://192.168.56.40:5000"]
+
+			- sudo systemctl restart containerd
+			- crictl -r unix:///var/run/containerd/containerd.sock 192.168.56.40:5000/			// test
+
+			// 3. Specifying ImagePullSecrets on a Pod.
+			- edit rancger-import.yaml:	image: 192.168.56.40:5000/rancher/rancher-agent:v2.9.2 			// from:	curl --insecure -sfL https://192.168.56.100/v3/import/2ddvphht4x77pt89kjcj6gh5766xt622c8lkxm58b5zssm8c7bfdvl_c-m-ggg7x598.yaml
+			// check secret on worker node
+			- kubectl -n kube-system exec -it etcd-k8s-70-master ls -l /etc/kubernetes/pki/etcd
+
+			// 4. add insecure registry for docker on rancher server
+			- nano /etc/docker/daemon.json
+				{
+				  "insecure-registries": ["192.168.56.40::5000"]
+				}
+			- systemctl restart docker
+		
+		// Rancher
+		+ Failed to install system chart rancher-provisioning-capi: pod cattle-system/helm-operation-trb86 failed, watch closed
+		+ Failed to install system chart rancher-webhook: pod cattle-system/helm-operation-gzk49 failed, watch closed
+		+ Internal error occurred: failed calling webhook "rancher.cattle.io.clusters.management.cattle.io": no endpoints available for service "rancher-webhook"
+		//////////		kubectl  --namespace kube-system get configmap kubeadm-config -o yaml
+		"--cluster-cidr=192.168.0.0/16"
+		 networking:
+		  dnsDomain: cluster.local
+		  podSubnet: 192.168.0.0/16
+		  serviceSubnet: 10.96.0.0/12
+		
+		+ rancher-webhooks: expiration cert
+			- kubectl get validatingwebhookconfiguration rancher.cattle.io -o yaml > vwc-rancher.cattle.io.yaml
+			- kubectl get mutatingwebhookconfiguration rancher.cattle.io -o yaml > mwc-rancher.cattle.io.yaml
+			- kubectl delete validatingwebhookconfiguration rancher.cattle.io
+			- kubectl delete mutatingwebhookconfiguration rancher.cattle.io
+
+			- kubectl apply -f vwc-rancher.cattle.io.yaml
+			- kubectl apply -f mwc-rancher.cattle.io.yaml
+		+
+		// cert
+		+ sudo dpkg-reconfigure ca-certificates
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+wget https://letsencrypt.org/certs/staging/letsencrypt-stg-int-r3.pem
+wget https://letsencrypt.org/certs/staging/letsencrypt-stg-root-x1.pem
+
+echo “Creating secret with let’s encrypt certs for rancher agent pod”
+kubectl -n cattle-system create configmap ca-pemstore --from-file=letsencrypt-stg-root-x1.pem --from-file=letsencrypt-stg-int-r3.pem
+
+echo “### patching rancher agent deployment…”
+echo “### adding volume from configmap with let’s encrypt certs”
+kubectl -n cattle-system get deployment cattle-cluster-agent -o json | jq ‘.spec.template.spec.volumes += [{“name”: “ca-pemstore”, configMap: {“name”: “ca-pemstore”} }]’ | kubectl replace -f -
+sleep 1
+echo “### Mounting volume with cert”
+kubectl -n cattle-system get deployment cattle-cluster-agent -o json | jq ‘.spec.template.spec.containers[0].volumeMounts += [{“name”: “ca-pemstore”,“mountPath”: “/usr/local/share/ca-certificates/letsencrypt-stg-root-x1.crt”,“subPath”: “letsencrypt-stg-root-x1.pem”,“readOnly”: false}]’ | kubectl replace -f -
+sleep 1
+echo “### Adding postStart action to update system wide certificates”
+kubectl -n cattle-system get deployment cattle-cluster-agent -o json | jq ‘.spec.template.spec.containers[0].lifecycle.postStart.exec.command = [ “/usr/sbin/update-ca-certificates”]’ | kubectl replace -f -
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -375,15 +505,15 @@ ssh ngocnm@192.168.56.
 		+ 1 tài khoản đặc quyền với full quyền tác động lên server, tkdq nhập use/path lên vault path, pass chia 2 nửa, sec gõ 1 nửa, ops gõ 1 nửa, sau khi nhập xong thì sec/ops chỉ biết là có cái path đó, ko biết pass là j.
 		+ Dev code & commit trên repo dev -> sau 30'-1h repo dev đc sync đến repo prod, ops cũng viết pipeline để cicd cho app và commit như vậy.
 		+ trong pipeline, ops define url vault, path vault, trong jenkins ops define credential vault -> đến ngày golive thì chạy
-		
-		+ 
+
+		+
 
 - gitops: sử dụng kết hợp với Vault, ko lưu secret trong git.
 - kyverno: xử lý phân quyền
 - Vault: quản lý secret tập trung, edit/update secret -> ko có quyền vào Vault thì ko xem đc
 	+ ks8 load secret by Agent -> phân quyền xem secret
 	+ gitlab: save path of secret on Vault, ko đc khai báo secret trực tiếp
-	
+
 	+ nếu k sử dụng Vault, khi agent inject secret vào pod thì secret sẽ là env var/file, bất cứ ai có quyền exec pod cũng xem đc secret (maintainer) -> dùng Vault
 		- if not Vault: xxx
 	+ Gitlab-CI:
@@ -391,21 +521,59 @@ ssh ngocnm@192.168.56.
 		+ cần xác thực (user, pass) đến Vault rồi mới pull value về được.
 		-> dùng gitlab-secret
 	+ Jenkins: define secret trong credential
-		
-- Security:
-	+ Quy trình use, save credential, phân quyền, quản lý ntn:
-		- credential save on Vault, chia 2 nửa, ops 1 nửa, sec 1 nửa
-		- khai báo secret vào helm/manifest, path là url trên vault, đã gồm 2 nửa trên kia
-	+ QT1:
-		- Cluster: 	dùng RBAC giới hạn quyền của user, cho phép user/group có quyền j với secret/pro/deployment
-		- k8s:		cũng cần phân quyền pod, ..., ko phải ai cũng có thể xem secret hay exec pod đc
-		
-	
+
+		// Rancher
+		+ Failed to install system chart rancher-provisioning-capi: pod cattle-system/helm-operation-trb86 failed, watch closed
+		+ Failed to install system chart rancher-webhook: pod cattle-system/helm-operation-gzk49 failed, watch closed
+		+ Internal error occurred: failed calling webhook "rancher.cattle.io.clusters.management.cattle.io": no endpoints available for service "rancher-webhook"
+		//////////		kubectl  --namespace kube-system get configmap kubeadm-config -o yaml
+		"--cluster-cidr=192.168.0.0/16"
+		 networking:
+		  dnsDomain: cluster.local
+		  podSubnet: 192.168.0.0/16
+		  serviceSubnet: 10.96.0.0/12
+
+
 	+ Secrets Store CSI Driver: kết hợp vs Dev + RBAC để phân quyền cho api k8s
 - Migrate DB:
-	+ 
-	+ 
+	+
+	+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Ubuntu Alias
+- Temporarily alias:	alias alias_name='aliased_command --options'	-> 	unalias alias_name
+- Permanent alias:		alias alias_name='aliased_command --options'
+	+ save to system file: /.bashrc	or	/.alias
+	+ save user file:	/.alias need add script to /.bashrc					-> source /.bashrc OR . /bashrc: kích hoạt alias ngay
+		if [ -e $HOME/.alias ]; then [ -n "$PS1" ] && . $HOME/.alias; fi
+- alias: xem alisas [permanent  + temporarily]
+// alias in Linux
+alias ai='sudo apt-get install'
+alias ar='sudo apt-get remove'
+alias au='sudo apt-get update'
+alias aug='sudo apt-get upgrade
+
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias du='du -h'			// du -sh path		du -h -d 1 path
+alias df='df -h'
+alias l.='ls -d .* --color=auto'
+alias ls='ls -F --color=auto'
+alias cl='clear && ls'		#Xóa màn hình và hiển thị file, thư mục con
+
+alias e='exit'
+alias s='sudo'
+alias nnb='nano ~/.bashrc'  #Sửa file alias
+alias rlb='. ~/.bashrc'		#Load lại file alias
+alias h='history'
+
+// alias in git:			git config --get-regexp alias		// check alias of git
+git config --global alias.co checkout
+git config --global alias.br branch
+git config --global alias.ci commit
+git config --global alias.st status
+git config --global alias.last 'log -1 HEAD'
 
 /////////////////////////////////////////////////////////////////////////////////////
 
@@ -459,4 +627,81 @@ spec:
 	  image: busybox 			→ Image của container khởi tạo
 	  command: ["sh", "-c", "echo Init; sleep 5"] 	→ Câu lệnh khởi tạo
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+- Mô hình CI/CD:
+	- TCB:
+		+ Team: 		Sec - Vault			Ops - System		 Dev - Code
+		+ Tool CI/CD:	jenkins - ansible
+		+ Repo:			gitlab
+		+ 1 tài khoản đặc quyền với full quyền tác động lên server, tkdq nhập use/path lên vault path, pass chia 2 nửa, sec gõ 1 nửa, ops gõ 1 nửa, sau khi nhập xong thì sec/ops chỉ biết là có cái path đó, ko biết pass là j.
+		+ Dev code & commit trên repo dev -> sau 30'-1h repo dev đc sync đến repo prod, ops cũng viết pipeline để cicd cho app và commit như vậy.
+		+ trong pipeline, ops define url vault, path vault, trong jenkins ops define credential vault -> đến ngày golive thì chạy
+
+		+
+
+- gitops: sử dụng kết hợp với Vault, ko lưu secret trong git.
+- kyverno: xử lý phân quyền
+- Vault: quản lý secret tập trung, edit/update secret -> ko có quyền vào Vault thì ko xem đc
+	+ ks8 load secret by Agent -> phân quyền xem secret
+	+ gitlab: save path of secret on Vault, ko đc khai báo secret trực tiếp
+
+	+ nếu k sử dụng Vault, khi agent inject secret vào pod thì secret sẽ là env var/file, bất cứ ai có quyền exec pod cũng xem đc secret (maintainer) -> dùng Vault
+		- if not Vault: xxx
+	+ Gitlab-CI:
+		+ save value of Vault
+		+ cần xác thực (user, pass) đến Vault rồi mới pull value về được.
+		-> dùng gitlab-secret
+	+ Jenkins: define secret trong credential
+
+- Security:
+	+ Quy trình use, save credential, phân quyền, quản lý ntn:
+		- credential save on Vault, chia 2 nửa, ops 1 nửa, sec 1 nửa
+		- khai báo secret vào helm/manifest, path là url trên vault, đã gồm 2 nửa trên kia
+	+ QT1:
+		- Cluster: 	dùng RBAC giới hạn quyền của user, cho phép user/group có quyền j với secret/pro/deployment
+		- k8s:		cũng cần phân quyền pod, ..., ko phải ai cũng có thể xem secret hay exec pod đc
+
+
+	+ Secrets Store CSI Driver: kết hợp vs Dev + RBAC để phân quyền cho api k8s
+- Migrate DB:
+	+
+	+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Ubuntu Alias
+- Temporarily alias:	alias alias_name='aliased_command --options'	-> 	unalias alias_name
+- Permanent alias:		alias alias_name='aliased_command --options'
+	+ save to system file: /.bashrc	or	/.alias
+	+ save user file:	/.alias need add script to /.bashrc					-> source /.bashrc OR . /bashrc: kích hoạt alias ngay
+		if [ -e $HOME/.alias ]; then [ -n "$PS1" ] && . $HOME/.alias; fi
+- alias: xem alisas [permanent  + temporarily]
+// alias in Linux
+alias ai='sudo apt-get install'
+alias ar='sudo apt-get remove'
+alias au='sudo apt-get update'
+alias aug='sudo apt-get upgrade
+
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias du='du -h'			// du -sh path		du -h -d 1 path
+alias df='df -h'
+alias l.='ls -d .* --color=auto'
+alias ls='ls -F --color=auto'
+alias cl='clear && ls'		#Xóa màn hình và hiển thị file, thư mục con
+
+alias e='exit'
+alias s='sudo'
+alias nnb='nano ~/.bashrc'  #Sửa file alias
+alias rlb='. ~/.bashrc'		#Load lại file alias
+alias h='history'
+
+// alias in git:			git config --get-regexp alias		// check alias of git
+git config --global alias.co checkout
+git config --global alias.br branch
+git config --global alias.ci commit
+git config --global alias.st status
+git config --global alias.last 'log -1 HEAD'
 
