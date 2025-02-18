@@ -524,7 +524,7 @@
 							when: manual																														// set to run manualy
 							script:
 								- >																																// start rules
-									if ["$GITLAB_USER_LOGIN" == 'ngocnm']; then
+									if [ "$GITLAB_USER_LOGIN" == 'ngocnm' ]; then
 										sudo cp target/shoe-ShoppingCart-0.0.1-SNAPSHOT.jar /datas/shoeshop/													// copy file
 									else
 										echo "Permission denied"
@@ -1302,10 +1302,7 @@
 					# kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/calico.yaml		// cài network cho cụm thì các node mới ready đc
 				Thực hiện join trên server k8s-master-2 và k8s master-3
 					# sudo kubeadm join 192.168.56.70:6443 --token your_token --discovery-token-ca-cert-hash your_sha
-					// config worker node: 	[preflight] FYI: You can look at this config file with 'kubectl -n kube-system get cm kubeadm-config -o yaml'
-											[kubelet-start] Writing kubelet configuration to file "/var/lib/kubelet/config.yaml"
-											[kubelet-start] Writing kubelet environment file with flags to file "/var/lib/kubelet/kubeadm-flags.env"
-											
+					
 			Mô hình thứ hai: 3 master (worker) – xem video bài giảng để hiểu
 				Thực hiện trên server k8s-master-1
 					# sudo kubeadm init --control-plane-endpoint "192.168.56.70:6443" --upload-certs
@@ -1369,7 +1366,7 @@
 1. Triển khai project thực tế:			full stack back-front + db -> ra cách làm
 	1.1. Mô hình triển khai			// roadmap.sh		// search: kubernetes flow, 2 flow: architecture flow / deploy flow
 		+ Traffic -> Ingress [domain1, domain2] -> Service [service1, service2] -> [ Node: [pod1, pod2], Node[pod11, pod12] ]
-		
+
 		+ File yaml:			// key: value				// k8s có support json nhưng ít dùng hơn yaml
 			- Cú pháp đơn giản
 			- Định dạng phong phú
@@ -1395,73 +1392,73 @@
 				+ metadata:		chứa thông tin liên quan đến resources:	name/labels/namespace/annotations
 				+ spec:			định nghĩa thông tin chi tiết cấu hình của resource tùy theo kind: [pod: spec của container in pod], [Deployment: spec của pod/template/jdk]
 				
-		+ Namespace: 
-			- tổ chức và phân chia tài nguyên trong cụm k8s thành các nhóm nhỏ để dễ quản lý và vận hành, đảm bảo bảo mật, cũng như áp dụng các policy đồng nhất giữa các namespace:
-				+ kiểm soát lượng cpu, ram, tài nguyên trên từng project, nhóm
-				+ phân tách các môi trường: project, dev, qa, production (nhiều dự án làm việc trên 1 cụm)
-				+ dễ thực thi các policy bảo mật, kiểm soát quyền truy cập: hạn mức tài nguyên, ai/tài nguyên nào đc làm j trên ns đó
-				
-			- mỗi cụm [cluster] có nhiều node, mỗi node có nhiều namespace	// nhiều cty chỉ tạo 1 cluster k8s với 1 node lớn, trong node đó chia nhiều namespace ->
-			- mỗi namespace là 1 project, mỗi project chứa nhiều pod, mỗi pod chứa nhiều container, mỗi ns nên có 1 file cấu hình .yaml
-			- luôn có 1 ns mặc định là defalut chứa pod của ng dùng, ngoài ra k8s tạo mặc định vài ns như: kube-node-lease, kube-public, kube-system
-			
-			- kubectl create/delete ns "Namespace"	// init ns		-> 		kubectl apply/delete -f .yaml	// apply, delete cấu hình = file .yaml
-			- kubectl get ns						// list ns
-			- kubectl get pod	-> ns: default		// kubectl get pod --namespace Name	
-			
-			- Config: 					project1-ns.yaml
-				+ Config Namspace
-					apiVersion: v1
-					kind: Namspace
-					metadata:
-						name: project1
-				+ Giới hạn tài nguyên: project1-resource-quota.yaml
-					apiVersion: v1
-					kind:  ResourceQuota
-					metadata:
-						name: mem-cpu-quota
-						namespace: project1
-					spec:
-						hard:						# hardware
-							requests.cpu: "2"		# mã 2 cpus core
-							requests.memory: 4Gi	# mã 4GB mem
-	
-	1.2. PP triển khai trên k8s: Tư duy ngược
-		- Nhu cầu -> Tool UI tổ chức -> trích xuất yaml -> Nghiên cứu syntax, format, value, template, options ... -> triển khai tương tự chuẩn format
-		- Tool UI tổ chức:				https://spacelift.io/blog/kubernetes-tools
-			+ commandline:	K9s
-			+ desktop:		Lends
-			+ website:		Rancher		-> cài rancher lên server để mn có thể truy cập vào, có phân quyền truy cập luôn, ko cần cài trên máy từng người
-		- Nghiên cứu syntax, format, value, template, options:
-			+ ConfigMap
-			+ Secret
-			+ Service
-			+ Monitor
-			+ Endpoint
-		
-		- Rancher: triển khai, qly, giám sát nhiều cụm K8S trên các môi trường khác nhau: On-premise & Cloud
-			+ Ưu điểm:
-				- Tạo tài nguyên = UI
-				- Quản lý đc nhiều cụm K8s
-				- Phân quyền mạnh mẽ - based RBAC Kubernetes, custom đc cụ thể đến từng tài nguyên
-				- Hỗ trợ giám sát, warning cụm Kubernetes: 
-				- Bảo mật tốt: authen = nhiều cách LDAP, github, webservice có mã hóa CLS, colaapj cụm, cô lập cụm
-				- được dử dụng trong các dự án lơn và môi trường dev/production
-			+ install:
-				- run Rancher by docker/docker-compose: 	cụm nhỏ, dev/staging
-				- run Rancher trực tiếp trên k8s = Helm:  	production, cụm to
-				
-				- run Rancher by docker/docker-compose:
-					+ tạo server run rancher:	có thể lưu data trên 1 ổ cứng riêng rồi gán vào server -> server lỗi vần còn data
-					+ lsblk:							// check list disk: 	-> sda = ổ của OS, sdb = ổ rời bên ngoài [type: disk]
+        + Namespace:
+            - tổ chức và phân chia tài nguyên trong cụm k8s thành các nhóm nhỏ để dễ quản lý và vận hành, đảm bảo bảo mật, cũng như áp dụng các policy đồng nhất giữa các namespace:
+                + kiểm soát lượng cpu, ram, tài nguyên trên từng project, nhóm
+                + phân tách các môi trường: project, dev, qa, production (nhiều dự án làm việc trên 1 cụm)
+                + dễ thực thi các policy bảo mật, kiểm soát quyền truy cập: hạn mức tài nguyên, ai/tài nguyên nào đc làm j trên ns đó
+
+            - mỗi cụm [cluster] có nhiều node, mỗi node có nhiều namespace	// nhiều cty chỉ tạo 1 cluster k8s với 1 node lớn, trong node đó chia nhiều namespace ->
+            - mỗi namespace là 1 project, mỗi project chứa nhiều pod, mỗi pod chứa nhiều container, mỗi ns nên có 1 file cấu hình .yaml
+            - luôn có 1 ns mặc định là defalut chứa pod của ng dùng, ngoài ra k8s tạo mặc định vài ns như: kube-node-lease, kube-public, kube-system
+
+            - kubectl create/delete ns "Namespace"	// init ns		-> 		kubectl apply/delete -f .yaml	// apply, delete cấu hình = file .yaml
+            - kubectl get ns						// list ns
+            - kubectl get pod	-> ns: default		// kubectl get pod --namespace Name	--> kubectl get pod --n Name
+
+            - Config: 					project1-ns.yaml
+                + Config Namspace
+                    apiVersion: v1
+                    kind: Namspace
+                    metadata:
+                        name: project1
+                + Giới hạn tài nguyên: project1-resource-quota.yaml
+                    apiVersion: v1
+                    kind:  ResourceQuota
+                    metadata:
+                        name: mem-cpu-quota
+                        namespace: project1
+                    spec:
+                        hard:						# hardware
+                            requests.cpu: "2"		# mã 2 cpus core
+                            requests.memory: 4Gi	# mã 4GB mem
+
+    1.2. PP triển khai trên k8s: Tư duy ngược
+        - Nhu cầu -> Tool UI tổ chức -> trích xuất yaml -> Nghiên cứu syntax, format, value, template, options ... -> triển khai tương tự chuẩn format
+        - Tool UI tổ chức:				https://spacelift.io/blog/kubernetes-tools
+            + commandline:	K9s
+            + desktop:		Lends
+            + website:		Rancher		-> cài rancher lên server để mn có thể truy cập vào, có phân quyền truy cập luôn, ko cần cài trên máy từng người
+        - Nghiên cứu syntax, format, value, template, options:
+            + ConfigMap
+            + Secret
+            + Service
+            + Monitor
+            + Endpoint
+
+        - Rancher: triển khai, qly, giám sát nhiều cụm K8S trên các môi trường khác nhau: On-premise & Cloud
+            + Ưu điểm:
+                - Tạo tài nguyên = UI
+                - Quản lý đc nhiều cụm K8s
+                - Phân quyền mạnh mẽ - based RBAC Kubernetes, custom đc cụ thể đến từng tài nguyên
+                - Hỗ trợ giám sát, warning cụm Kubernetes:
+                - Bảo mật tốt: authen = nhiều cách LDAP, github, webservice có mã hóa CLS, colaapj cụm, cô lập cụm
+                - được dử dụng trong các dự án lơn và môi trường dev/production
+            + install:
+                - run Rancher by docker/docker-compose: 	cụm nhỏ, dev/staging
+                - run Rancher trực tiếp trên k8s = Helm:  	production, cụm to
+
+                - run Rancher by docker/docker-compose:
+                    + tạo server run rancher:	có thể lưu data trên 1 ổ cứng riêng rồi gán vào server -> server lỗi vần còn data
+                    + lsblk:							// check list disk: 	-> sda = ổ của OS, sdb = ổ rời bên ngoài [type: disk]
                     + mkfs.ext4 -m 0 /dev/sdb			// formart 100% và chỉ tạo 1 phân vùng
                     + mkdir /data						// tạo folder để mount ổ mới
                     + echo "/dev/sdb 	  /data 		 ext4 	 defaults	0	 	0" | tee -a /etc/fstab	-> mount -a  -> df -h	// mount ổ vừa tạo vào folder /data in server, check	
 					// 		<file system> <mount point>  <type>  <options>  <dump>  <pass>
-					
-					+ install docker: apt update -y && apt install docker.io docker-compose -y
-					+ check rancher version:	search rancher version matrix	-> cần check đúng highest version support của k8s hiện tại
-					+ install rancher =- docker-compose: mkdir /exHDD/rancher -> nano docker-compose.yaml	-> docker-com up -d		-> run rancher by IP/domain: change pass -> 192.168.56.91
+
+                    + install docker: apt update -y && apt install docker.io docker-compose -y
+                    + check rancher version:	search rancher version matrix	-> cần check đúng highest version support của k8s hiện tại
+                    + install rancher =- docker-compose: mkdir /exHDD/rancher -> nano docker-compose.yaml	-> docker-com up -d		-> run rancher by IP/domain: change pass -> 192.168.56.91
 								version: '3'
 								services:
 								  rancher-server:
@@ -1475,12 +1472,11 @@
 									  - /exHDD/rancher/data:/var/lib/rancher
 									privileged: true
                         // volumes: /exHDD/rancher/data:/var/lib/rancher		-> mount volume của ranhcer /var/lib/rancher ra ổ cứng thứ 2 exHDD/rancher
-						
-					+ rancher web -> import k8s: import existing -> cluster name -> add member role: Admin owner -> Create -> select command for unknown authority
-					+ master node: run command	-> download config .yaml && apply this file
-			+ using:
-				- 
-			
+
+                    + rancher web -> import k8s: import existing -> cluster name -> add member role: Admin owner -> Create -> select command for unknown authority
+                    + master node: run command	-> download config .yaml && apply this file
+					+ using:
+						-
 			+ install rancher on cloud:
 				- Cloud Home -> Computer enhine -> VM instance -> Create instance: 	tạo 1 máy ảo để cài rancher -> name=rancher-server, location, cpu-ram, os & storage, network: http & https
 				- Add new disk to server:	
@@ -1547,7 +1543,6 @@
 		- Pod:
 			+ kubectl get events --all-namespaces  --sort-by='.metadata.creationTimestamp'		kubectl get events --sort-by=".metadata.managedFields[0].time"
 		- Containder:
-				
 2. Xây dựng công cụ dự án:				db, message, cache	-> dảm bảo data & tối ưu
 3. Giám sát và quản trị Kubernetes:		monitoring dự án, hạ tầng server, uptime, backup & restore trên cụm Kubernetes
 4. 
@@ -1583,7 +1578,7 @@ spec:
 	- name: config-volume 		→ Tên của volume
 	  configMap:
 	    name: techops-config	→ Sử dụng ConfigMap làm nguồn và tham chiếu đến ConfigMap có tên “techops-config”
-	  
+
 	RESTARTPOLICY: ALWAYS 		→ CHÍNH SÁCH KHỞI ĐỘNG LẠI POD (ALWAYS, ONFAILURE HOẶC NEVER)
 
 	NODESELECTOR: 				→ LỊCH TRÌNH (SCHEDULE) POD TRÊN CÁC NODE CỤ THỂ
@@ -1595,7 +1590,7 @@ spec:
 	  value: "true" 			→ Giá trị cần khớp
 	  effect: "NoExecute" 		→ Tác động: Không lên lịch (NoSchedule) hoặc đuổi khỏi node (NoExecute)
 
-	SECURITYCONTEXT: 			→ THIẾT LẬP BẢO MẬT Ở CẤP ĐỘ POD	
+	SECURITYCONTEXT: 			→ THIẾT LẬP BẢO MẬT Ở CẤP ĐỘ POD
 	  runAsUser: 1000 			→ Chạy container dưới user ID này
 	  runAsGroup: 3000 			→ Chạy container dưới group ID này
 	  fsGroup: 2000 			→ Nhóm sở hữu volumes đã gắn kết
@@ -1611,53 +1606,53 @@ spec:
 	+ if [ $? -ne 0 ]:		$? = return code form a previous command or function			 0 is the standard return code for a successful completion		-ne: not equal
 	+ if [ $# -ne 3 ]:		$# = holds the number of arguments passed to the script
 	+ if [ -e "filename" ] echo "File exist"; else echo "File does not exist"; fi
-
-	+ &&=and	 [$0 $1]=argumeent0/1
+	
+	+ &&=and	 [$0 $1]=argumeent0/1		
 	+ number:	-eq=Equality check		-ne=Inequality check		-lt / -le = Less Than/Less Than or Equal >< -ht / -ge
 	+ string:	-z "$a" = $a is empty	"$a" = / == "$b": same as	"$a" != "$b"
 - Array:
 	+ array_name=(value1 ... valuen)		-> 		array_name[index]=value			${array_name[index]}		${array_name[*]} = ${array_name[@]} = all elements
 
 - Loop:
-	+ while ... do ... done				for var in v-1 ... v-n do ... done				untill ... do ... done
+	+ while ... do ... done				for var in v-1 ... v-n do ... done				untill ... do ... done				
 
 //////// Groovy ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 0. Define:
 	- một ngôn ngữ lập trình động chạy trên nền máy ảo Java, có các tính năng tương tự như Python hoặc Ruby.
-	-
+	- 
 1. Syntax:
 	- same JAVA
 	- Not same Java:
 		+ Shebang line: 	#!/usr/bin/env groovy
 		+ Keys words:		as		def		in		trait
-
+		
 		+ Operator:
 			- Unary operators:	+3=3	-4=0-4		-(-1)=1
 			- Assignment arithmetic operators:	**=	-> 3**=2 ~ 3^2=9
 			- Relational operators:		== ~ equal() [compare value]			=== ~ is() ~ identical (Since Groovy 3.0.0) [[compare value] & address]
 			- Logical operators:	! 	> 	&& 	> 	||
 			- Ternary operator: v1 ? v1 : v2 = v1 ?: v1 : Elvis operator
-
-			- Object operators:
+			
+			- Object operators: 
 				+ Safe navigation operator:			object?.field
 				+ Direct field access operator:		object.@field
 				+ Method pointer operator
-
+				
 			- Regular expression operators:
 				+ Pattern operator: 	~
 				+ Find operator:		=~
 				+ Match operator:		==~
-
+		
 		+ String: 	'abc'	'ab'='a' + 'b'	"abc"		"""abc multi line"""		'''mutiline string'''		/…​/ Slashy			$/…​/$ Dollar slashy
 		+ Num:		byte, char, short, int, long, float, double, BigInteger/BigDecimal
-
+		
 		+ Arays:	String[] arrStr = ['Ananas', 'Banana', 'Kiwi']			def numArr = [1, 2, 3] as int[]			Integer[][] matrix2 = [[1, 2], [3, 4]]			def primes = new int[] {2, 3, 5, 7, 11}
 		+ List:		def ll = [1,2,3,'c',true] -> ll[0] = 1, ll[-1]=true		//default: ArrayList			def linkedList = [2, 3, 4] as LinkedList  ~  LinkedList otherLinked = [3, 4, 5]
 					ll << 'e':	append end
-
+			
 			- subList:	ll[1,3] = [2,'c']		ll[[2..4]=[3,'c',true]
 			- matrix:	multi = [[1,2], [3,4]] -> multi[1][1]
-
+			
 		+ Maps:		def colors = [red: '#FF0000', green: '#00FF00', blue: '#0000FF'] -> colors['pink'] = colors.pink = '#FF00FF'			def emptyMap = [:]
 2. Default import lib:
 	- Default import lib:
@@ -1672,8 +1667,8 @@ spec:
 	- Multi-methods: ~ runtime dispatch when overloading method
 		- java: 	select overloading method when complie -> based on params type
 		- groovy:	select overloading method when runtime -> based on params type
-		-
-
+		- 
+		
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
