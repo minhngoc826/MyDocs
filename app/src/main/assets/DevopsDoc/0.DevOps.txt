@@ -1452,16 +1452,16 @@
                     + tạo server run rancher:	có thể lưu data trên 1 ổ cứng riêng rồi gán vào server -> server lỗi vần còn data
                     + lsblk:							// check list disk: 	-> sda = ổ của OS, sdb = ổ rời bên ngoài [type: disk]
                     + mkfs.ext4 -m 0 /dev/sdb			// formart 100% và chỉ tạo 1 phân vùng
-                    + mkdir /data						// tạo folder để mount ổ mới
-                    + echo "/dev/sdb 	  /data 		 ext4 	 defaults	0	 	0" | tee -a /etc/fstab	-> mount -a  -> df -h	// mount ổ vừa tạo vào folder /data in server, check	
+                    + mkdir /exhdd						// tạo folder để mount ổ mới
+                    + echo "/dev/sdb	/exhdd	ext4	defaults	0	0" | tee -a /etc/fstab	-> mount -a -> systemctl daemon-reload -> df -h	// mount ổ vừa tạo vào folder /exhdd in server, check	
 					// 		<file system> <mount point>  <type>  <options>  <dump>  <pass>
 
                     + install docker: apt update -y && apt install docker.io docker-compose -y
                     + check rancher version:	search rancher version matrix	-> cần check đúng highest version support của k8s hiện tại
-                    + install rancher =- docker-compose: mkdir /exHDD/rancher -> nano docker-compose.yaml	-> docker-com up -d		-> run rancher by IP/domain: change pass -> 192.168.56.91
+                    + install rancher =- docker-compose: mkdir /exhdd/rancher -> nano docker-compose.yaml	-> docker-com up -d		-> run rancher by IP/domain: change pass -> 192.168.56.91
 								version: '3'
 								services:
-								  rancher-server:
+								  rancher-install:
 									image: rancher/rancher:v2.9.2
 									container_name: rancher-server
 									restart: unless-stopped
