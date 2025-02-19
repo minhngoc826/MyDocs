@@ -61,7 +61,7 @@ ssh ngocnm@192.168.56.
 0. Virtualbox VM: 				
 	+ shared folder:		E:\VMWare\SharedFolder
 		- VM -> Setting -> SharedFolder -> New -> Select E:\VMWare\SharedFolder -> Mount point: /mnt/shared-folder or /home/user/shared-folder 	 & 		Select: Auto mount & Make Permanent
-		- VM:		sudo mount -t vboxsf SharedFolder /mnt/shared-folder
+		- VM:		mkdir /mnt/shared-folder 				-> sudo mount -t vboxsf SharedFolder /mnt/shared-folder
 		- Host: 	copy file to E:\VMWare\SharedFolder		-> ls /mnt/shared-folder
 		- VM:		cp filePath /mnt/shared-folder			-> F5 E:\VMWare\SharedFolder
 	+ shared folder VMWare:
@@ -145,7 +145,7 @@ ssh ngocnm@192.168.56.
 						- ./certs:/certs
 					environment:
 						REGISTRY_HTTP_TLS_CERTIFICATE: certs/domain.crt
-						REGISTRY_HTTP_TLS_KEY: certs/domain.key
+						REGISTRY_HTTP_TLS_KEY: certs/domain.key 
 				web:
 					image: nginx:alpine
 					ports:
@@ -397,6 +397,8 @@ ssh ngocnm@192.168.56.
 			- kubectl get events --all-namespaces  --sort-by='.metadata.creationTimestamp'
 			- kubectl get events pod car-serv-pod -n car-serv-ns
 			- kubectl describe pod car-serv-pod -n car-serv-ns
+			- kubectl -n cattle-system logs -l app=cattle-cluster-agent
+			- kubectl -n cattle-system logs -f cattle-cluster-agent
 		+ kubelet:
 	9.3. Fix error
 		+ init k8s in master node:				- node is not ready	-> apply calico.yaml		- init wrong node ip -> init kem ip & set ip for each node in: 
@@ -413,43 +415,47 @@ ssh ngocnm@192.168.56.
 				
 		+ using privare registry:
 			// 1. create secret for single privare registry
-			- kubectl create secret docker-registry dockersecret-name --docker-server=192.168.56.40:5000 --docker-username=ngocnm --docker-password=admin 		// --docker-email=<your-email>
+			- kubectl create secret docker-registry dockersecret-name --docker-server=192.168.56.100:5000 --docker-username=ngocnm --docker-password=admin 		// --docker-email=<your-email>
 					containers:		// pod.yaml
 					- name: ...
 					imagePullSecrets:
 					- name: dockersecret-name
 				+ kubectl get secret dockersecret-name --output=yaml				kubectl describe secret dockersecret-name			kubectl edit/delete secrets <secret-name>
-				+ kubectl get secret dockersecret-name --output="jsonpath={.data.\.dockerconfigjson}" | base64 --decode	 // {"auths":{"192.168.56.40:5000":{"username":"ngocnm","password":"admin","auth":"bmdvY25tOmFkbWlu"}}}
+				+ kubectl get secret dockersecret-name --output="jsonpath={.data.\.dockerconfigjson}" | base64 --decode	 // {"auths":{"192.168.56.100:5000":{"username":"ngocnm","password":"admin","auth":"bmdvY25tOmFkbWlu"}}}
 				// Add image pull secret to service account
 				- kubectl patch serviceaccount default -p '{"imagePullSecrets": [{"name": "dockersecret-name"}]}'			// ~ kubectl edit serviceaccount/default
+			
 			// 2. Adding insecure registry in containerd
 			- sudo nano /etc/containerd/config.toml
 					[plugins."io.containerd.grpc.v1.cri".registry.configs]
-					  [plugins."io.containerd.grpc.v1.cri".registry.configs."192.168.56.40:5000"]
-						[plugins."io.containerd.grpc.v1.cri".registry.configs."192.168.56.40:5000".tls]
-						  ca_file = ""
-						  cert_file = ""
-						  insecure_skip_verify = true
-						  key_file = ""
+						[plugins."io.containerd.grpc.v1.cri".registry.configs."192.168.56.100:5000"]
+							[plugins."io.containerd.grpc.v1.cri".registry.configs."192.168.56.100:5000".tls]
+							  ca_file = ""
+							  cert_file = ""
+							  insecure_skip_verify = true
+							  key_file = ""
 
 					[plugins."io.containerd.grpc.v1.cri".registry.mirrors]	
-					  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."192.168.56.40:5000"]
-						endpoint = ["https://192.168.56.40:5000"]
+						[plugins."io.containerd.grpc.v1.cri".registry.mirrors."192.168.56.100:5000"]
+							endpoint = ["https://192.168.56.100:5000"]
 			
 			- sudo systemctl restart containerd
-			- crictl -r unix:///var/run/containerd/containerd.sock 192.168.56.40:5000/			// test
+			- crictl -r unix:///var/run/containerd/containerd.sock 192.168.56.100:5000/			// test
 			
 			// 3. Specifying ImagePullSecrets on a Pod.
-			- edit rancger-import.yaml:	image: 192.168.56.40:5000/rancher/rancher-agent:v2.9.2 			// from:	curl --insecure -sfL https://192.168.56.100/v3/import/2ddvphht4x77pt89kjcj6gh5766xt622c8lkxm58b5zssm8c7bfdvl_c-m-ggg7x598.yaml
+			- edit rancher-import.yaml:	image: 192.168.56.100:5000/rancher/rancher-agent:v2.9.2 			// from:	curl --insecure -sfL https://192.168.56.95/v3/import/2ddvphht4x77pt89kjcj6gh5766xt622c8lkxm58b5zssm8c7bfdvl_c-m-ggg7x598.yaml
 			// check secret on worker node
 			- kubectl -n kube-system exec -it etcd-k8s-70-master ls -l /etc/kubernetes/pki/etcd
 			
 			// 4. add insecure registry for docker on rancher server
 			- nano /etc/docker/daemon.json
 				{
-				  "insecure-registries": ["192.168.56.40::5000"]
+				  "insecure-registries": ["192.168.56.100:5000"]
 				}
 			- systemctl restart docker
+		
+		+ dial tcp 192.168.56.100:5000: connect: protocol not available:	
+			- 
 		
 		// Rancher	
 		+ Failed to install system chart rancher-provisioning-capi: pod cattle-system/helm-operation-trb86 failed, watch closed
@@ -473,7 +479,74 @@ ssh ngocnm@192.168.56.
 		+ 
 		// cert
 		+ sudo dpkg-reconfigure ca-certificates
-		openssl x509 -inform DER -in certificate.cer -out certificate.crt
+		+ openssl x509 -inform DER -in certificate.cer -out certificate.crt
+		+ sudo update-ca-certificates
+		
+		+ fix tls cert: docker, rancher, k8s 												// rancher cert leng too short -> openssl 3.0 reject
+			- openssl genrsa -out key.pem 2048			 									// gen private key with length 2048
+			- openssl req -new -key key.pem -out csr.pem -subj "/CN=domain_IP"				// create CSR
+			- openssl x509 -req -in csr.pem -signkey key.pem -out cert.pem -days 3650		// self sign cert	- 	Tự ký chứng chỉ
+			- cp cert.pem cacerts.pem														// Tạo cacerts.pem (nếu cần)
+			- rancher service:
+				version: '3'
+				services:
+				  rancher-server:
+					image: rancher/rancher:v2.9.2
+					container_name: rancher-server
+					restart: unless-stopped
+					ports:
+					  - "80:80"
+					  - "443:443"
+					volumes:
+					  - ./data:/var/lib/rancher
+					  - ./certs:/etc/rancher/certs
+					environment:
+					  CATTLE_TLS_CERTDIR: /etc/rancher/certs
+					privileged: true
+			- openssl s_client -connect 192.168.56.95:443 -CAfile /etc/kubernetes/pki/ca.crt -showcerts		// check certs dung chua on k8s node: verify return:0
+		
+		+ Can not telnet to rancher-server ip: tcp connection is not available	-> iptables -F			// flush iptables
+		
+		+ ERROR: https://192.168.56.95/ping is not accessible (Failed to connect to 192.168.56.95 port 443 after 134115 ms: Couldn't connect to server)		-		CrashLoopBackOff
+			- kubectl -n cattle-system patch deployment cattle-cluster-agent --patch \
+			  '{
+				"spec": {
+				  "template": {
+					"spec": {
+					  "hostAliases": [
+						{
+						  "ip": "{{ rancher_cluster_ip }}",
+						  "hostnames": [
+							"{{ rancher_server_url }}"
+						  ]
+						}
+					  ]
+					}
+				  }
+				}
+			  }'
+			  
+			- kubectl -n cattle-system patch  daemonsets cattle-node-agent --patch '{
+			 "spec": {
+				 "template": {
+					 "spec": {
+						 "hostAliases": [
+							 {
+								"hostnames":
+								  [
+									"{{ rancher_server_hostname }}"
+								  ],
+								"ip": "{{ rancher_server_ip }}"
+							 }
+						 ]
+					 }
+				 }
+			 }
+			}'
+			
+			- kubectl -n cattle-system get pods
+			- kubectl -n cattle-system describe pod
+			- kubectl -n cattle-system logs -f cattle-cluster-agent-xxx
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 CẤU TRÚC POD.YAML TRONG KUBERNETES
