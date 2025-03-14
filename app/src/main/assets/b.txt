@@ -1,84 +1,97 @@
-https://www.facebook.com/groups/950551346787852/
+//// Căn xe //////////////////////////////////////////////////////////////////////////////////////////////////////
+1. Căn khoảng cách
+	1.1. Đầu xe:
+		- mép nắp capo: 
+			+ trùng 1/2 bánh xe trước nằm ngang: 	kc 1.5m, rẽ trái phải đều ko sợ va chạm
+			+ trùng chân lề đường / chân tường: 	kc đầu xe tới lề khoảng 3m
+			
+			+ lấp biển số xe phía trước: 			kc đuôi xe trc 1.5m
+			+ trùng mép trên cản sau xe trước:		kc đuôi xe trc 3m
+		- mép dưới kính lái:
+			+ trùng với chân tường: 				hết lái trái-phải ko lo quẹt
+			+ trùng mép dưới cản sau xe trước:		kc 1m, hết lái ko lo quẹt khi ra khỏi chỗ đỗ
+			+ trùng chân ng đi bộ:					kc 3m		-	đầu gối = 2m	- mông = 30cm
+			
+		- góc cột A:
+			+ trùng chân lề đường / chân tường: 	kc đầu xe tới lề khoảng 1m, rẽ 2 hết lái bên thoải mái
+		- mép dưới gương:
+			+ trùng với mép chân tường/lề: 			kc 30cm		// kc 10cm nếu trùng mép trên lề đường
+	1.2. Đuôi xe
+		- 1/2 tay nắm cửa trước bên lái trùng với mép chân tường thì đuôi xe cách tường 30cm
+		- nhìn gương chiếu hậu trong xe chỉ thấy kính lái xe phía sau thì kc là 1m
+	
+	1.3. Hông xe 2 bên
+		- Góc cột A:
+			+ trùng với vạch kẻ đường dọc / lê đường: 	kc 50cm
+			+ đèn xe đối diện ở phía ngoài góc cột A hoặc cao hơn [pha/đèn hậu] (thấy hết đèn xe ở ngay góc) - đi qua ko va chạm / lùi xe hết lái cũng ko va chạm - [nếu đèn ở phía trong góc cột A thì đi qua có va chạm]
+			+ xe // với tường, chân tường ở ngoài góc cột A thì hết lái cũng ko lo xe va chạm
+			
+		- mép dưới cửa sổ trái:
+			+ trùng với lề dọc: 					kc 1.2-1.5m					~ trùng 1/2 bánh xe bên cạnh
+			
+		- mép dưới cửa sổ phải:
+			+ trung tay nắm cửa xe bên cạnh:		kc 1m
+		
+		- Con ruồi - gốc cần gạt mưa:
+			+ trùng với lề đường thì bánh xe phải cách lề 30cm
+		
+		- vô lăng:
+			+ mép ngoài trái/phải: 			bánh xe trái/phải
+			+ giữa vô lăng + 2 ngón tay: 	vị trí giữa xe
 
-# sudo kubeadm init
+2. Rẽ góc vuông: rẽ góc, ra khỏi chỗ đỗ
+	- cách tường 1m: 	gương = cột A qua góc thì rẽ hết lái
+	- cách tường 0.5m:	1/2 cửa sổ qua góc
+	- cách tường 0.3m:	cột B qua góc
+	- mép dưới kính lái ko cao hơn đèn hậu xe phía trước: rẽ hết lái ko lo va chạm
+	
+3. Ra khỏi chỗ đỗ:
+	3.1. Dọc:
+		- lùi ra khỏi chỗ đỗ: 		cột A = gương đi qua đuôi xe bên cạnh -> hết lái 2 bên ko lo quẹt
+		- tiến ra khỏi chỗ đỗ:		cột B đi qua đầu xe bên cạnh -> -> hết lái 2 bên ko lo quẹt
+		- lùi vào chỗ đỗ: 			cột C đi qua đầu xe bên cạnh, hết lái lùi vào
+	3.2. Ngang
+	
+4. Rẽ khi vào khúc cua
+	- Khúc cua dài: 				góc 90, nên đánh lái 1 lần
+	- khúc cua ngắn:				góc 180 sau khi qua vạch kẻ đường, sau đó trả lái dần
+//// Thao tác //////////////////////////////////////////////////////////////////////////////////////////////////////
+1. Lên xe:
+	- 1. dẫm max fanh, đề xe (xe đang ở số P)
+	- 2. đi 1-2 vòng quanh xe, kiểm tra lốp, đèn, vật cản xung quanh.
+	- 3. ngồi vào xe, chỉnh ghế, gương, khóa cửa
+	- 4. thắt dây an toàn
+	- 5. quan sát lỗi trên bảng điều khiển
+	- 6. hạ fanh tay
+	- 7. vào số D
+	- 8. bật xi nhan trái
+	- 9. đánh lái max trái, nhả fanh cho xe từ từ nhập làn, quan sát gương + phía trước
+	- 10. dầu xe nhập 1/2 làn r trả thẳng lái, ga nhẹ tăng tốc
+	
+2. Xuống xe:
+	- 1. Dừng xe, cụp gương
+	- 2. Về P, kéo fanh tay
+	- 3. tắt máy, kéo hết kính xe, tháo dây an toàn, mở hé cửa quan sát an toàn r xuống xe.
 
-[sudo] password for devops:
-I0208 12:06:59.373375    1127 version.go:256] remote version is much newer: v1.32.1; falling back to: stable-1.30
-[init] Using Kubernetes version: v1.30.9
-[preflight] Running pre-flight checks
-[preflight] Pulling images required for setting up a Kubernetes cluster
-[preflight] This might take a minute or two, depending on the speed of your internet connection
-[preflight] You can also perform this action in beforehand using 'kubeadm config images pull'
-W0208 12:07:03.071168    1127 checks.go:844] detected that the sandbox image "registry.k8s.io/pause:3.8" of the container runtime is inconsistent with that used by kubeadm.It is recommended to use "registry.k8s.io/pause:3.9" as the CRI sandbox image.
-[certs] Using certificateDir folder "/etc/kubernetes/pki"
-[certs] Generating "ca" certificate and key
-[certs] Generating "apiserver" certificate and key
-[certs] apiserver serving cert is signed for DNS names [dev-server kubernetes kubernetes.default kubernetes.default.svc kubernetes.default.svc.cluster.local] and IPs [10.96.0.1 10.0.2.15]
-[certs] Generating "apiserver-kubelet-client" certificate and key
-[certs] Generating "front-proxy-ca" certificate and key
-[certs] Generating "front-proxy-client" certificate and key
-[certs] Generating "etcd/ca" certificate and key
-[certs] Generating "etcd/server" certificate and key
-[certs] etcd/server serving cert is signed for DNS names [dev-server localhost] and IPs [10.0.2.15 127.0.0.1 ::1]
-[certs] Generating "etcd/peer" certificate and key
-[certs] etcd/peer serving cert is signed for DNS names [dev-server localhost] and IPs [10.0.2.15 127.0.0.1 ::1]
-[certs] Generating "etcd/healthcheck-client" certificate and key
-[certs] Generating "apiserver-etcd-client" certificate and key
-[certs] Generating "sa" key and public key
-[kubeconfig] Using kubeconfig folder "/etc/kubernetes"
-[kubeconfig] Writing "admin.conf" kubeconfig file
-[kubeconfig] Writing "super-admin.conf" kubeconfig file
-[kubeconfig] Writing "kubelet.conf" kubeconfig file
-[kubeconfig] Writing "controller-manager.conf" kubeconfig file
-[kubeconfig] Writing "scheduler.conf" kubeconfig file
-[etcd] Creating static Pod manifest for local etcd in "/etc/kubernetes/manifests"
-[control-plane] Using manifest folder "/etc/kubernetes/manifests"
-[control-plane] Creating static Pod manifest for "kube-apiserver"
-[control-plane] Creating static Pod manifest for "kube-controller-manager"
-[control-plane] Creating static Pod manifest for "kube-scheduler"
-[kubelet-start] Writing kubelet environment file with flags to file "/var/lib/kubelet/kubeadm-flags.env"
-[kubelet-start] Writing kubelet configuration to file "/var/lib/kubelet/config.yaml"
-[kubelet-start] Starting the kubelet
-[wait-control-plane] Waiting for the kubelet to boot up the control plane as static Pods from directory "/etc/kubernetes/manifests"
-[kubelet-check] Waiting for a healthy kubelet at http://127.0.0.1:10248/healthz. This can take up to 4m0s
-[kubelet-check] The kubelet is healthy after 1.002460877s
-[api-check] Waiting for a healthy API server. This can take up to 4m0s
-[api-check] The API server is healthy after 23.504826993s
-[upload-config] Storing the configuration used in ConfigMap "kubeadm-config" in the "kube-system" Namespace
-[kubelet] Creating a ConfigMap "kubelet-config" in namespace kube-system with the configuration for the kubelets in the cluster
-[upload-certs] Skipping phase. Please see --upload-certs
-[mark-control-plane] Marking the node dev-server as control-plane by adding the labels: [node-role.kubernetes.io/control-plane node.kubernetes.io/exclude-from-external-load-balancers]
-[mark-control-plane] Marking the node dev-server as control-plane by adding the taints [node-role.kubernetes.io/control-plane:NoSchedule]
-[bootstrap-token] Using token: hghp1j.1n11loiwd2l0me3g
-[bootstrap-token] Configuring bootstrap tokens, cluster-info ConfigMap, RBAC Roles
-[bootstrap-token] Configured RBAC rules to allow Node Bootstrap tokens to get nodes
-[bootstrap-token] Configured RBAC rules to allow Node Bootstrap tokens to post CSRs in order for nodes to get long term certificate credentials
-[bootstrap-token] Configured RBAC rules to allow the csrapprover controller automatically approve CSRs from a Node Bootstrap Token
-[bootstrap-token] Configured RBAC rules to allow certificate rotation for all node client certificates in the cluster
-[bootstrap-token] Creating the "cluster-info" ConfigMap in the "kube-public" namespace
-[kubelet-finalize] Updating "/etc/kubernetes/kubelet.conf" to point to a rotatable kubelet client certificate and key
-[addons] Applied essential addon: CoreDNS
-[addons] Applied essential addon: kube-proxy
+3. Lùi xe:
+	- 
+	- 
 
-Your Kubernetes control-plane has initialized successfully!
-
-To start using your cluster, you need to run the following as a regular user:
-
-  mkdir -p $HOME/.kube
-  sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-  sudo chown $(id -u):$(id -g) $HOME/.kube/config
-
-Alternatively, if you are the root user, you can run:
-
-  export KUBECONFIG=/etc/kubernetes/admin.conf
-
-You should now deploy a pod network to the cluster.
-Run "kubectl apply -f [podnetwork].yaml" with one of the options listed at:
-  https://kubernetes.io/docs/concepts/cluster-administration/addons/
-
-Then you can join any number of worker nodes by running the following on each as root:
-
-IP: 192.168.56.70
-// 1 master - n worker
-kubeadm join 192.168.56.70:6443 --token arv434.r8yjaxhcf1eghmmn \
-        --discovery-token-ca-cert-hash sha256:2cf3ddb19c0e6c942ac5d965aab0fbf0a6264892fd86664f4b5c2cca6f482755
+4. Ghép dọc:
+	+ sa hình:
+		- đi vuông góc với ô đỗ, gương đến cạnh ô thì hết lái sang phải, tiến đến khi nhìn gương trái thấy thân xe thẳng với gương xe bên cạnh
+		- hết lái trái, lùi chậm đến khi thân xe thẳng góc với ô đỗ
+		- trả thẳng lái, lùi tiếp đến vạch
+		
+		- khi ra: vai qua góc thì hết lái trái
+	+ 
+5. Ghép ngang:
+	+ sa hình: 
+		- đi //= xe đang đỗ, hết lái phải lùi xe đến khi qua gương trái thấy hết đầu xe sau or góc vuông đối diện, 
+		- trả thẳng lái, lùi tiếp đến khi bánh sau trái chạm vạch đỗ or tay nắm cửa trước phải chạm lề đường
+		- hết lái trái, lùi từ từ đến khi thân xe // lề, 
+		- trả thẳng lái r lùi or tiến cho phù hợp khoảng cách
+	+ Trên phố đông xe: đi //, gương vượt qua đầu xe đang đỗ, hết lái sang phải đến khi bánh trước lên vỉa hè 1 chút thì hết lái sang trái đến khi bánh sau sát vỉa hè, r thì hết lái sang phải, lùi lại đến khi xe // vỉa hè
+//// Vạch //////////////////////////////////////////////////////////////////////////////////////////////////////
+- Mắt võng: 	màu vàng, ko đc dừng dỗ trên vạch, đèn đỏ cũng đc phép đi rẽ phải
+- Xương cá:		màu trắng, ko đc đi / cắt / đè vạch, nhưng đc dừng đỗ nếu xe bị lỗi
