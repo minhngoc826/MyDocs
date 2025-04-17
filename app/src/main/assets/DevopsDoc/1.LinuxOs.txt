@@ -8,13 +8,10 @@
 	- echo "/dev/sdb /exhdd ext4 defaults 0 0" | tee -a /etc/fstab 			// <file system> <mount point>   <type>  <options>   <dump>  <pass>
 	- mount -a
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Học linux thì có những đầu mục nhỏ như này cho dễ nắm bắt :
 1. Cài đặt centos, ubuntu.
 2. Lvm
-3. Cấu hình network, rule fw với firewalld, iptables. Hiểu thế nào là inbound/outbound.
+3. Cấu hình network, rule fw với firewall, iptables. Hiểu thế nào là inbound/outbound.
 4. User/group, phân quyền, thế nào là root, non root.
 5. Yum, rpm, tìm hiểu về repo
 6. Cấu hình quản trị ssh
@@ -27,4 +24,225 @@ Học linux thì có những đầu mục nhỏ như này cho dễ nắm bắt :
 Question:
 - quy hoạch lại phân vùng mount sao cho dễ backup/restore
 - việc khó nhất: migrate hệ thống từ A -> B, gặp quả app phức tạp, cấu hình ăn liền Os từng máy
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//// Linux basic////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+2. Module 2 - System Architect
+	2.1. /proc/filesystem
+		- /proc/interrupts
+		- /proc/dma							// Direct Memory Access
+		- proc/ioports						// cpu communicate with devices by separate ports -> writing to IO ports = simply ports
+		
+	2.2. Usb topology:		lsusb			// list usb
+	2.3. Usb controller:	
+		- 3 type of USB host controller:
+			+ Open Host Controller Interface (OHCI):		USB 1.1	- max 12Mbps
+			+ Universal Host Controller Interface (UHCI):	USB 1.1	- max 12Mbps
+			+ Enhanced Host Controller Interface (EHCI):	USB 2.0 - max 480Mbps
+															USB 3.0 - max 4800Mbps												
+	2.4. Usb device:
+	    - Human Interface Device (HID):		keyboard, mouse, etc
+		- Communications device;			modems
+		- Mass storage device:				HDD, sdard, usb, ...
+		- Audio:							sound devices
+		- Printer:
+		- IrDA:								Infrared devices
+	2.5. Usb driver:	
+	2.6. Reporting Your Hardware:
+		- lsmod:	showing what kernel modules are currently loaded = module name, its size, its use number, and its status.		// 
+		- lsdev:	displays information about your system’s hardware, such as interrupt addresses and I/O ports.					// apt install procinfo
+		- lspci:	displays information about your system’s PCI buses and your installed PCI devices
+
+3. Module 3 - Change Runlevels and Shut Down or Reboot System
+	3.1. - dmesg | more:							view messages from the last boot sequence
+		 - /var/log/messages						Reviewing system logs
+	3.2. Runlevels:
+		- runlevel 		0 -> 6							// 1 = s = S
+			+ 0 ~ 6: 	shutdown/reboot system
+			+ 1: 		single-user mode ~ maintenance mode: system services not started (most daemon), networking is disabled, remote logins are disabled -> fix corrupt filesystem
+			+ 2: 		multiuser	[Debian-based systems: default runlevel, Red Hat-based system: multiuser mode without NFS filesharing or X Windows System)
+			+ 3: 		multiuser runs everything except X Windows System 	[Red Hat-based systems: default runlevel]
+			+ 4:		not using on Debian-based systems
+			+ 5:		not using on Debian-based systems, full multiuser mode with GUI login (X11).
+		- switch runlevel:
+			- init runlevel				// init 1 ~ init s/S
+		- /etc/init.d:	
+		- /etc/rc0.d -> rc6.d:
+	3.3. Reboot - Shutdown
+		- Reboot:		shutdown -r now 		reboot					init 6
+		- Shutdown:		shutdown now			shutdown -r now			shutdown -f/-F
+
+4. Module 4 - Linux Installation & Package Management
+	4.1. Linux Installation
+		- Hardisk:
+			+ Sector=512byte 	- Tracker 	- Cylinder
+			+ Storage:
+				- /boot		swap [depemdimg on RAM]		/usr [all excutables are shared to workstation via read-only NFS]		/var []		/tmp []		/home []
+			+ Mount:
+				- mounting: 	new HDD need to mount to a folder in filesystem table, folder=mount point
+				- /etc/fstab:	During system startup, these directories and mount points may be managed
+		- Master Boot Record (MBR):
+			+ small program that contains information about your hard disk partitions and loads the operating system, located in first sector of HDD, if file is damaged, the operating system cannot boot
+			+ Backup MBR:		dd if=/dev/hda of=/mbr.txt count=1 bs=512
+			+ Restore MBR:		dd if=/mbr.txt of=/dev/hda count=1 bs=512
+		
+		- Backup HDD:			
+			+ backup hdd-1 to hdd-2:	dd if=/dev/hdd-1 of=/dev/hdd-2
+			+ BnR partition layout:		sfdisk -d /dev/hda > partition_backup.txt			sfdisk /dev/hda < partition_backup.txt
+		
+		- Swap space = virtual memory: x2 RAM size
+		
+		- Boot Manager:
+			+ Boot processing: 2 phases:
+				- Run the boot loader from the boot device:		find the selected kernel and get it loaded into memory, including any user-supplied options
+				- Launch the Linux kernel and start processes:	Your boot loader starts the specified kernel, hardware is placed under the control of the running kernel
+			+ Boot Loader:
+				- LILO (Linux Loader):				load the Linux kernel into memory and start it [two parts: The boot loader & The lilo command]
+				- Grub (GRand Unified Bootloader):	multistage boot loader, much like LILO, More flexible than LILO []
+				
+		- Manage Shared Libraries:
+			+ Link Types:	
+				- Statically linked: 	Stands alone, requiring no additional code at runtime, Wasted memory 
+				- Dynamically linked:	lib is loaded to memory -> multiple program can use it -> shared libraries
+			+ Shared Library Dependencies:
+				- ldd /bin/bash:			Display shared libraries required by each of the programs
+	4.2. Package Management
+		- RPM: Red Hat Package Manager			rpm -i ~ rpm install		// -U=--upgrade			-e=--uninstall
+		- YUM: Yellowdog Updater Modified		yum list |more				yum install package		yum remove package
+		- Debian Package Management:
+			+ format:		name_version-revision_architect.deb				// architect=[amd: Ubuntu/Win, arm: macOs]
+			+ dpkg			original Debian package management tool 
+			+ apt-get 		Advanced Package Tool
+			+ dselect
+			+ alian
+			
+5. GNU and Unix Commands
+	5.1. Command line: ~ Shell		dấu nhắc lệnh: [root user = ~#]		[other user = ~$]
+		- Shell variable:			PS1: # PS1="bring brong >"	-> dấu nhắc lệnh '>'
+		- multi lines:				# for var in $var1 $var2 $var3						~ 		# for var in $var1 $var2 $var3; do echo $var; done
+									> do
+									> echo $var
+									> done
+		- multi commands:			# ls; ps													ls & ps
+		- history					// HISTSIZE default = 1000 line
+		- Command substitution		# var=$(pwd; ls); echo $var
+		- Man pages:				# man -wa mkfifo											// The man (manual) command was created to put the books on the system
+		- Cat:						# cat /etc/fstab > /tmp/fstab								// Concatenate files and print on the standard output
+		- Cut:						# cut -d: -f1 /etc/fstab									// Cut out (that is, print) selected columns or fields from one or more files; The source file is not changed
+		- expand command:			# expand -40 test.txt > test40.txt							// convert tab = spaces; 1 tab = 8 spaces; -40 spaces
+		- fmt command:				# fmt -w 80 test.txt > new_test.txt							// set line width, default 75 character -> breaks long lines and joins short lines, not remove empty lines
+		- head command:				# head -3 file-1 file-2										// Print the first few lines of one or more files
+		- join command:				# join -1 N -2 N' file-1 file-2								// join two files based on a common field [-1 N = joint to file 1]
+		- paste						# paste file-1 file-2; paste -d'@' file-1 file-2
+		- nl command:				# nl file													// num line of file
+		- pr						# pr -h "Header title" file
+		- sort						# ls -l | sort -n -k5
+		- split						# split -3[num lines] infile outfile-format
+		- tac						# tac file													// đảo ngược content of file
+		- tail						# tail -n 100 file											// print n line of file
+		- tr						# cat file | tr a-z A-Z; cat file | tr a-c A-Z;
+		- unexpand					# unexpand -t 2 file										// 1 tab = 2 spaces
+		- uniq						# uniq [option] file										// print content file ignore duplicate lines
+		- wc						# wc [-c/-l/-w] file										// count characters / lines / words
+	5.2. Basic File Management
+		- cp						# cp -Rp file-1 file-2
+		- cpio						# cpio -ov < [files] > output.zip; cpio -iv < output.zip;	// 
+		- dd						# dd if=path-1 of=path-2 conv=list/lcase					// converts and copies files: dd if=/dev/cdrom of=/tmp/cd.img; if=/dev/sda
+		- file						# file file-path											// determine the kind of file, not need file-extension
+		- find						# find /usr -name "*.c"
+		- gzip, gunzip				# 
+		- mkdir						# mkdir -p path; mkdir -m 750 path
+		- mv						# mv -f -i src targ
+		- rm						# rm -d/-f/-r/-R filePath
+		- rmdir						# rmdir -p dirPath											// Delete directories, which must be empty
+		- touch						# touch -a[access time] / -m[modify time] / -t[timestamp]   // 
+		- File-Naming Wildcards		# ls /con*/*/inv*.txt
+		
+	5.3. Use Streams, Pipes, and Redirects
+		- Linux & Unix: everything is a file [disk drives and their partitions, tape drives, terminals, serial ports, the mouse, and even audio] are mapped into the filesystem.
+		- Programs to interact with many different devices and files in the same way.
+		
+		- Standard I/O and Default File Descriptors:	a file descriptor is an abstract indicator for accessing a file
+			+ stdin=0=[<]			stdout=1=[> ~ 1>]			stderr=2=[>2]
+		
+		- Pipes: 		(|) [output-1 = input-2]
+		- Redirects:	
+			+ [cmd > file		cmd 1> file]		[cmd 2> file]		[cmd > file 2>&1]:		send [stdout / stderr / both stdout & stderr] to file
+			+ [cmd > file-1 2> file-2]:															send stdout to file-1 & stderr to file-2
+			+ [cmd < file]:																		receive stdin from file
+			+ [cmd >> file		cmd 1>> file]		[cmd 2>> file]		[cmd >> file 2>&1]:		append [stdout / stderr / both] to file
+			+ [cmd-1 | cmd-2]																	pipe stdout from cmd-1 to cmd-2
+			+ [cmd-1 2>&1 | cmd-2]																pipe stdout & stderr from cmd-1 to cmd-2
+			
+	5.4. Create, Monitor, and Kill Processes
+		- Process:
+			+ a command, application, or script, that runs on your system is a process
+			+ shell [command starts one or more process of its own (refer to as child processes)]
+			+ Attributes & concepts associated with these proceses include:
+				- lifetime [lives], pID, uID - gID, parent process, ppID, environment[variables & values], current working directory
+			
+			+ Monitoring: 
+				- ps / ps aux / ps -aux
+				- pstree
+				- top
+				- free / free -tm
+				- uptime:				current time, how long the system has been running, how many users are currently logged on, and the system load averages for the past 1, 5, and 15 minutes
+				
+		- Signaling Active Processes:	Each process running on your system listens for signals, simple messages sent to the process either by the kernel or by a user
+			+ HUP	1		auto sent when logout or disconnect a modem
+			+ INT	2		interrupt, stop ~ Ctrl-C
+			+ KILL	9		kill process, signal can't be ignored by process
+			+ TERM	15		terminate if possible
+			+ TSTP	20		stop executing, ready to continue ~ Ctrl-Z
+			+ CONT	18		continue execution, send signal after SIGTSTP / SIGSTOP
+			
+			+ kill parent process -> kill all child proceses
+			
+		- Shell Job Control:
+			+ cmd & = put process to background = create a job with a numberID = [1, 2, ...]		// # /usr/bin/firefox &
+			+ bg / fg [numberID]																	// 
+			+ jobs																					// List the active jobs
+			
+	5.5. Modify Process Execution Priorities
+		- priority number = nice number: -20 -> +19				// The lower the nice number, the higher the priority to the CPU
+		- nice -10 vi /etc/hosts								// start process with nice number
+		- renice 20 pID		/		remice -10 -u admin -p 501	// use for running process
+		
+	5.6. Text file searching  / editing
+		- Regular Expression Syntax:
+			- ^ 				// begin line
+			- $					// end line
+			- \<\>		
+			- [abc][a-z]		// [a or b or c][a-z] = aa -az, ba-bz, ca-cz
+			- [^abc][^a-z]		// except [abc][a-z] ~ not
+			- .					// any single char except newline
+			- *					// any single char & digit
+			- ?					// 0 or 1 regex
+			- +					// 1 or n regex
+			- {n, m}			// from n -> m occurrences
+			- |					// or
+			- (regex)			// 
+			
+		- grep [options] regex [files]:		grep -i linux file1		grep '^Linux' file1		grep 'x$' file1		grep '[Ll]inux' file1
+		- grep 'abc*' file1					
+		
+		- Vim editor:
+			+ Mode: command & insert (press i / esc to switch mode)
+			+ Command mode: 0 ^ $
+			+ 
+
+6. Devices, Linux FileSystems and FileSystem Hierarchy Standard
+	6.1. Create Partitions and Filesystems
+	6.2. Maintain the Integrity of Filesystems
+	6.3. Control Filesystem Mounting and Unmounting
+	6.4. Set and View Disk Quotas
+	6.5. Manage File Permissions and Ownership
+	6.6. Create and Change Hard and Symbolic Links
+	6.7. Find System Files and Place Files in the Correct Location
+//// Summary ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+- Backup HDD:			
+	+ backup hdd-1 to hdd-2:	dd if=/dev/hdd-1 of=/dev/hdd-2
+	+ BnR partition layout:		sfdisk -d /dev/hda > partition_backup.txt			sfdisk /dev/hda < partition_backup.txt
+- Linux & Unix: everything is a file [disk drives and their partitions, tape drives, terminals, serial ports, the mouse, and even audio] are mapped into the filesystem.
+- 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
