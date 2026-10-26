@@ -69,3 +69,54 @@ Chi phí ước tính trọn gói khám suốt thai kỳ:
 Trường hợp tiết kiệm (Bệnh viện công / BHYT): Khoảng 3.000.000 – 6.000.000 đồng (chưa tính tiền sinh).
 
 Trường hợp cao cấp (Viện quốc tế / Phòng khám chuyên gia): Khoảng 15.000.000 – 35.000.000 đồng (chưa tính gói sinh).
+
+
+Xét nghiệm NIPT (Non-Invasive Prenatal Testing) hiện có mức giá dao động rất rộng, từ 1.500.000 VNĐ đến gần 11.000.000 VNĐ .
+Mức chi phí này phụ thuộc chủ yếu vào số lượng nhiễm sắc thể (NST) cần sàng lọc (phạm vi phát hiện dị tật), loại thai (đơn hay đôi) và trung tâm thực hiện .
+Dưới đây là bảng phân tích chi tiết mức giá các gói xét nghiệm NIPT phổ biến nhất trên thị trường hiện nay:
+1. Chi phí các gói NIPT theo phạm vi sàng lọc (Dành cho Thai đơn)
+🔹 Gói NIPT 3 (Gói Cơ bản)
+Phạm vi sàng lọc: Tập trung phát hiện 3 hội chứng dị tật phổ biến nhất liên quan đến lệch bội NST là Down (Trisomy 21), Edwards (Trisomy 18) và Patau (Trisomy 13) .
+
+Mức giá tham khảo: 1.500.000 – 2.500.000 VNĐ .
+
+Phù hợp với: Mẹ bầu có thai kỳ nguy cơ thấp, ngân sách tiết kiệm nhưng vẫn muốn tầm soát các dị tật cốt lõi với độ chính xác cao hơn Double Test/Triple Test truyền thống .
+
+🔹 Gói NIPT 4 hoặc NIPT 7 (Gói Mở rộng)
+Phạm vi sàng lọc: Bao gồm 3 hội chứng của gói NIPT 3 + Sàng lọc thêm các bất thường liên quan đến Nhiễm sắc thể giới tính nhằm phát hiện 4 hội chứng: Turner (XO), Siêu nữ (XXX), Klinefelter (XXY), Jacobs (XYY) .
+
+Mức giá tham khảo: 2.200.000 – 3.500.000 VNĐ .
+
+Phù hợp với: Tất cả các mẹ bầu muốn kiểm tra toàn diện hơn về cả dị tật phổ biến lẫn các rối loạn liên quan đến giới tính của bé .
+
+🔹 Gói NIPT 23 / NIPT 24 (Gói Toàn diện)
+Phạm vi sàng lọc: Khảo sát toàn bộ 23 cặp nhiễm sắc thể của thai nhi. Phát hiện lệch bội trên 3 NST phổ biến, các NST giới tính và bất thường số lượng trên tất cả các cặp NST còn lại .
+
+Mức giá tham khảo: 3.800.000 – 6.500.000 VNĐ .
+
+Phù hợp với: Mẹ bầu lớn tuổi (trên 35 tuổi), có tiền sử sảy thai, gia đình có tiền sử dị tật di truyền, hoặc siêu âm có dấu hiệu nghi ngờ .
+
+🔹 Gói NIPT Chuyên sâu / Tích hợp (Ví dụ: triSure Pro, GenEva Plus...)
+Phạm vi sàng lọc: Khảo sát toàn bộ 23 cặp NST + Tầm soát thêm các hội chứng vi mất đoạn/lặp đoạn (như hội chứng DiGeorge, Cri du Chat...) + Sàng lọc hàng chục bệnh đơn gen lặn di truyền từ bố và mẹ .
+
+Mức giá tham khảo: 7.000.000 – 11.000.000 VNĐ .
+
+2. Chi phí xét nghiệm NIPT cho THAI ĐÔI (Song thai)
+Đối với thai đôi, kỹ thuật tách và phân tích ADN tự do của thai nhi trong máu mẹ phức tạp hơn vì có tới hai nguồn ADN khác nhau . Do đó, giá xét nghiệm thường cao hơn :
+Gói NIPT thai đôi cơ bản (Down, Edwards, Patau): Từ 5.500.000 – 6.500.000 VNĐ .
+
+3. Bảng giá NIPT tham khảo tại một số đơn vị uy tín
+Mức giá thực tế của dịch vụ NIPT (đã bao gồm phí lấy mẫu, tư vấn và gói bảo hiểm cam kết hỗ trợ nếu có kết quả sai lệch) :
+
+ Đơn vị thực hiện	Gói NIPT 3 (Cơ bản)	Gói NIPT 7	Gói NIPT 23/24	Gói Cao cấp / Chuyên sâu
+Hệ thống Y tế MEDLATEC 	2.500.000 VNĐ	3.500.000 VNĐ	4.500.000 VNĐ	7.500.000 VNĐ
+GENTIS (Công nghệ Illumina Mỹ) 	~3.000.000 VNĐ	-	6.500.000 VNĐ	9.000.000 - 11.000.000 VNĐ
+Bệnh viện Phụ sản Hà Nội / Phụ sản TW	~2.200.000 VNĐ	~3.200.000 VNĐ	~4.000.000 - 5.500.000 VNĐ	~6.500.000 - 8.000.000 VNĐ
+Biorad / Vietcare / Lab tư nhân 	~1.800.000 VNĐ	~2.800.000 VNĐ	~3.800.000 VNĐ	~6.000.000 - 7.500.000 VNĐ
+
+ 💡 Lưu ý quan trọng khi chọn gói NIPT
+Thời điểm thực hiện: Bạn có thể làm xét nghiệm NIPT từ rất sớm, ngay khi thai đủ từ 9 hoặc 10 tuần tuổi trở lên (tính theo siêu âm) .
+
+Chính sách bảo hiểm/Cam kết đi kèm: Các trung tâm xét nghiệm uy tín thường có gói bảo hiểm cam kết đi kèm (đền bù lên tới 300 triệu - 1.2 tỷ đồng nếu có kết quả âm tính giả, hoặc hỗ trợ chi phí chọc ối nếu kết quả dương tính) . Bạn nên hỏi kỹ phần này trước khi đóng tiền .
+
+Dịch vụ lấy mẫu tại nhà: Nhiều đơn vị lớn hiện nay hỗ trợ lấy máu tại nhà hoàn toàn miễn phí hoặc với mức phí rất thấp (vài chục nghìn đồng), rất tiện lợi cho các mẹ bầu bị nghén hoặc hạn chế đi lại .
